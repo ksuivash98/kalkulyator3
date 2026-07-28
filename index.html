@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Офлайн-калькулятор заработной платы сотрудника салона связи"/>
+  <title>Калькулятор ЗП · Салон связи</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="app-bg" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar__brand">
+      <div class="brand-mark" aria-hidden="true">₽</div>
+      <div>
+        <h1 class="brand-title">Калькулятор ЗП</h1>
+        <p class="brand-sub">Салон связи</p>
+      </div>
+    </div>
+
+    <div class="topbar__meta">
+      <div class="meta-chip">
+        <span class="meta-chip__label">Сотрудник</span>
+        <strong id="active-employee-name">—</strong>
+      </div>
+      <div class="meta-chip">
+        <span class="meta-chip__label">Период</span>
+        <strong id="active-period-label">—</strong>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <button type="button" id="btn-theme" class="btn btn--ghost" title="Сменить тему">
+        <span aria-hidden="true">🌙</span><span>Тёмная</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Боковая панель: сотрудники -->
+    <aside class="panel panel--sidebar">
+      <div class="panel__head">
+        <h2>Сотрудники</h2>
+        <button type="button" id="btn-employee-add" class="btn btn--primary btn--sm" title="Создать">＋</button>
+      </div>
+
+      <label class="field">
+        <span class="field__label">Поиск по ФИО</span>
+        <input type="search" id="employee-search" placeholder="Начните вводить ФИО…" autocomplete="off"/>
+      </label>
+
+      <ul id="employee-list" class="employee-list" aria-label="Список сотрудников"></ul>
+
+      <div class="sidebar-actions">
+        <button type="button" id="btn-employee-rename" class="btn btn--ghost btn--sm">✎ Переименовать</button>
+        <button type="button" id="btn-employee-duplicate" class="btn btn--ghost btn--sm">⧉ Дублировать</button>
+        <button type="button" id="btn-employee-delete" class="btn btn--danger btn--sm">🗑 Удалить</button>
+      </div>
+    </aside>
+
+    <!-- Основной контент -->
+    <section class="content">
+      <!-- Период и город -->
+      <div class="panel">
+        <div class="panel__head">
+          <h2>Период и условия</h2>
+        </div>
+        <div class="form-grid form-grid--4">
+          <label class="field">
+            <span class="field__label">Месяц</span>
+            <select id="period-month"></select>
+          </label>
+          <label class="field">
+            <span class="field__label">Год</span>
+            <select id="period-year"></select>
+          </label>
+          <label class="field">
+            <span class="field__label">Город</span>
+            <select id="city-select"></select>
+          </label>
+          <div class="info-pair">
+            <div>
+              <span class="field__label">Категория</span>
+              <strong id="city-category">—</strong>
+            </div>
+            <div>
+              <span class="field__label">Стоимость часа</span>
+              <strong id="city-rate">—</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Рабочее время -->
+      <div class="panel">
+        <div class="panel__head">
+          <h2>Рабочее время</h2>
+        </div>
+        <div class="form-grid form-grid--5">
+          <label class="field">
+            <span class="field__label">Рабочих дней</span>
+            <input type="number" id="work-days" min="0" step="1" placeholder="0"/>
+          </label>
+          <label class="field">
+            <span class="field__label">Количество часов</span>
+            <input type="number" id="work-hours" min="0" step="0.5" placeholder="0"/>
+          </label>
+          <div class="metric">
+            <span class="field__label">Среднее часов / день</span>
+            <strong id="avg-hours">0,00</strong>
+          </div>
+          <div class="metric metric--accent">
+            <span class="field__label">Оклад</span>
+            <strong id="salary-value">0,00 ₽</strong>
+          </div>
+          <div class="metric">
+            <span class="field__label">Средняя ЗП / день</span>
+            <strong id="avg-salary-day">0,00 ₽</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Итоги месяца -->
+      <div class="panel">
+        <div class="panel__head">
+          <h2>Итоги за месяц</h2>
+        </div>
+        <div class="totals-grid">
+          <div class="total-card"><span>Рабочих дней</span><strong id="total-work-days">0</strong></div>
+          <div class="total-card"><span>Часов</span><strong id="total-hours">0,00</strong></div>
+          <div class="total-card"><span>Среднее часов / день</span><strong id="total-avg-hours">0,00</strong></div>
+          <div class="total-card"><span>Общий оклад</span><strong id="total-salary">0,00 ₽</strong></div>
+          <div class="total-card"><span>Сумма продаж</span><strong id="total-sales">0,00 ₽</strong></div>
+          <div class="total-card"><span>Общая премия</span><strong id="total-premium">0,00 ₽</strong></div>
+          <div class="total-card"><span>Средняя премия / день</span><strong id="total-avg-premium">0,00 ₽</strong></div>
+          <div class="total-card"><span>Средняя продажа / день</span><strong id="total-avg-sales">0,00 ₽</strong></div>
+          <div class="total-card"><span>Операторских операций</span><strong id="total-ops-count">0</strong></div>
+          <div class="total-card"><span>Количество продаж</span><strong id="total-sales-count">0</strong></div>
+          <div class="total-card total-card--highlight"><span>Итого к выплате</span><strong id="total-payout">0,00 ₽</strong></div>
+        </div>
+      </div>
+
+      <!-- Вкладки -->
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab-btn tab-btn--active" data-view="days" role="tab">Продажи по дням</button>
+        <button type="button" class="tab-btn" data-view="calendar" role="tab">Календарь</button>
+        <button type="button" class="tab-btn" data-view="stats" role="tab">Статистика</button>
+      </div>
+
+      <!-- Дни -->
+      <div id="view-days" class="panel view-panel">
+        <div class="panel__head">
+          <h2>Продажи по дням</h2>
+          <p class="panel__hint">Нажмите на день, чтобы открыть подробную карточку</p>
+        </div>
+        <div id="days-list" class="days-list"></div>
+      </div>
+
+      <!-- Календарь -->
+      <div id="view-calendar" class="panel view-panel" hidden>
+        <div class="panel__head">
+          <h2>Календарь</h2>
+          <p class="panel__hint">Цвет карточки зависит от итога за день</p>
+        </div>
+        <div class="cal-weekdays" aria-hidden="true">
+          <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+        </div>
+        <div id="calendar-grid" class="calendar-grid"></div>
+        <div class="cal-legend">
+          <span class="legend legend--empty">Пусто</span>
+          <span class="legend legend--low">Низкий</span>
+          <span class="legend legend--medium">Средний</span>
+          <span class="legend legend--high">Высокий</span>
+          <span class="legend legend--top">Топ</span>
+        </div>
+      </div>
+
+      <!-- Статистика -->
+      <div id="view-stats" class="panel view-panel" hidden>
+        <div class="panel__head">
+          <h2>Dashboard</h2>
+        </div>
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">📈</span>
+            <span class="stat-card__label">Лучший день по продажам</span>
+            <strong id="stat-best-sales" class="stat-card__value">Нет данных</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">🏆</span>
+            <span class="stat-card__label">Лучший день по премии</span>
+            <strong id="stat-best-premium" class="stat-card__value">Нет данных</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">⭐</span>
+            <span class="stat-card__label">Самый прибыльный показатель</span>
+            <strong id="stat-best-indicator" class="stat-card__value">Нет данных</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">🛒</span>
+            <span class="stat-card__label">Общий объём продаж</span>
+            <strong id="stat-volume" class="stat-card__value">0,00 ₽</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">🧾</span>
+            <span class="stat-card__label">Средний чек продажи</span>
+            <strong id="stat-avg-check" class="stat-card__value">0,00 ₽</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">💎</span>
+            <span class="stat-card__label">Общая премия</span>
+            <strong id="stat-premium" class="stat-card__value">0,00 ₽</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">⏱</span>
+            <span class="stat-card__label">Оклад</span>
+            <strong id="stat-salary" class="stat-card__value">0,00 ₽</strong>
+          </article>
+          <article class="stat-card stat-card--hero">
+            <span class="stat-card__icon" aria-hidden="true">💰</span>
+            <span class="stat-card__label">Итого</span>
+            <strong id="stat-total" class="stat-card__value">0,00 ₽</strong>
+          </article>
+        </div>
+      </div>
+
+      <!-- Экспорт -->
+      <div id="export-panel" class="panel">
+        <div class="panel__head">
+          <h2>Экспорт и импорт</h2>
+        </div>
+        <div class="export-actions">
+          <button type="button" id="btn-export-pdf" class="btn btn--primary">📄 Экспорт PDF</button>
+          <button type="button" id="btn-export-excel" class="btn btn--primary">📊 Экспорт Excel</button>
+          <button type="button" id="btn-export-json" class="btn btn--ghost">💾 Экспорт JSON</button>
+          <button type="button" id="btn-import-json" class="btn btn--ghost">📥 Импорт JSON</button>
+          <input type="file" id="import-file" accept="application/json,.json" hidden/>
+        </div>
+        <p class="panel__hint">Данные сохраняются автоматически. Хранятся последние 10 резервных копий.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Модальное окно дня -->
+  <div id="day-modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="day-modal-title">
+    <div id="day-modal-backdrop" class="modal__backdrop"></div>
+    <div class="modal__dialog">
+      <div class="modal__head">
+        <h2 id="day-modal-title">День</h2>
+        <button type="button" id="day-modal-close" class="btn btn--ghost btn--icon" title="Закрыть">✕</button>
+      </div>
+
+      <div class="modal__body">
+        <div class="form-grid form-grid--2">
+          <label class="field">
+            <span class="field__label">Количество часов</span>
+            <input type="number" id="day-hours" min="0" step="0.5" placeholder="0"/>
+          </label>
+          <label class="field">
+            <span class="field__label">Комментарий</span>
+            <input type="text" id="day-comment" placeholder="Заметка к дню…"/>
+          </label>
+        </div>
+
+        <div class="day-summary">
+          <div><span>Оклад за день</span><strong id="day-summary-salary">0,00 ₽</strong></div>
+          <div><span>Продажи</span><strong id="day-summary-sales">0,00 ₽</strong></div>
+          <div><span>Премия</span><strong id="day-summary-premium">0,00 ₽</strong></div>
+          <div class="day-summary__total"><span>Итого за день</span><strong id="day-summary-total">Нет данных</strong></div>
+        </div>
+
+        <section class="block-section">
+          <div class="block-section__head">
+            <h3>Продажи</h3>
+            <button type="button" id="btn-add-sales-line" class="btn btn--primary btn--sm">➕ Добавить показатель</button>
+          </div>
+          <div id="sales-lines" class="lines-list"></div>
+        </section>
+
+        <section class="block-section">
+          <div class="block-section__head">
+            <h3>Операторский</h3>
+            <button type="button" id="btn-add-operator-line" class="btn btn--primary btn--sm">➕ Добавить показатель</button>
+          </div>
+          <div id="operator-lines" class="lines-list"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Плавающие кнопки -->
+  <div class="fab-wrap">
+    <div id="fab-menu" class="fab-menu">
+      <button type="button" id="fab-add-employee" class="fab fab--secondary" title="Новый сотрудник">👤＋</button>
+      <button type="button" id="fab-export" class="fab fab--secondary" title="Экспорт">📤</button>
+    </div>
+    <button type="button" id="fab-main" class="fab fab--main" title="Меню">＋</button>
+  </div>
+
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="data.js"></script>
+  <script src="utils.js"></script>
+  <script src="storage.js"></script>
+  <script src="employee.js"></script>
+  <script src="calculator.js"></script>
+  <script src="export.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
