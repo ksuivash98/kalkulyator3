@@ -118,8 +118,10 @@ class UIController {
    */
   recalculateAndRefresh() {
     if (!this.activePeriod) return;
+    this.syncKpiFromInputs();
     this.calculation = SalaryCalculator.calculatePeriod(this.activePeriod);
     this.renderWorkInfo();
+    this.renderSeasonality();
     this.renderKpi();
     this.renderMonthTotals();
     this.renderStats();
@@ -127,6 +129,43 @@ class UIController {
     this.renderCalendar();
     this.renderDayModalIfOpen();
     this.autoSave();
+  }
+
+  /**
+   * Считывает KPI из полей ввода в модель периода.
+   * Гарантирует, что расчёт видит актуальные значения с экрана.
+   */
+  syncKpiFromInputs() {
+    if (!this.activePeriod) return;
+    if (!this.activePeriod.kpi) {
+      this.activePeriod.kpi = EmployeePeriod.normalizeKpi();
+    }
+
+    const fields = [
+      ['#kpi-sim', 'sim'],
+      ['#kpi-conversion', 'conversion'],
+      ['#kpi-focus-spd', 'focusSpd'],
+      ['#kpi-focus-cs', 'focusCs'],
+      ['#kpi-focus-mnp', 'focusMnp'],
+      ['#kpi-credits', 'credits'],
+      ['#kpi-accessories', 'accessories'],
+      ['#kpi-insurance', 'insurance']
+    ];
+
+    fields.forEach(([selector, key]) => {
+      const el = Utils.$(selector);
+      if (!el) return;
+      const raw = String(el.value).trim();
+      if (raw === '') return;
+      this.activePeriod.kpi[key] = Utils.toNumber(raw, 0);
+    });
+
+    const planMet = Utils.$('#kpi-credits-plan-met');
+    if (planMet) {
+      this.activePeriod.kpi.applicationsPlanMet = Boolean(planMet.checked);
+    }
+
+    this.activePeriod.kpi = EmployeePeriod.normalizeKpi(this.activePeriod.kpi);
   }
 
   /* ========================================================================
@@ -168,27 +207,28 @@ class UIController {
       this.recalculateAndRefresh();
     });
 
-    // KPI
-    const kpiPercentFields = [
-      ['#kpi-sim', 'sim'],
-      ['#kpi-conversion', 'conversion'],
-      ['#kpi-focus-spd', 'focusSpd'],
-      ['#kpi-focus-cs', 'focusCs'],
-      ['#kpi-focus-mnp', 'focusMnp'],
-      ['#kpi-credits', 'credits'],
-      ['#kpi-accessories', 'accessories'],
-      ['#kpi-insurance', 'insurance']
-    ];
-    kpiPercentFields.forEach(([selector, key]) => {
-      Utils.$(selector).addEventListener('input', (e) => {
-        this.activePeriod.kpi[key] = Utils.toNumber(e.target.value, 0);
+    // KPI — делегирование на панель, чтобы не терять обработчики
+    const kpiPanel = Utils.$('#kpi-panel');
+    if (kpiPanel) {
+      kpiPanel.addEventListener('input', (e) => {
+        const target = e.target;
+        if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLSelectElement)) {
+          return;
+        }
+        if (!target.id || !target.id.startsWith('kpi-')) return;
+        this.syncKpiFromInputs();
         this.recalculateAndRefresh();
       });
-    });
-    Utils.$('#kpi-credits-plan-met').addEventListener('change', (e) => {
-      this.activePeriod.kpi.applicationsPlanMet = Boolean(e.target.checked);
-      this.recalculateAndRefresh();
-    });
+      kpiPanel.addEventListener('change', (e) => {
+        const target = e.target;
+        if (!(target instanceof HTMLInputElement) && !(target instanceof HTMLSelectElement)) {
+          return;
+        }
+        if (!target.id || !target.id.startsWith('kpi-')) return;
+        this.syncKpiFromInputs();
+        this.recalculateAndRefresh();
+      });
+    }
 
     // Вкладки
     Utils.$$('.tab-btn').forEach((btn) => {
@@ -428,8 +468,21 @@ class UIController {
     if (!day) return;
     const item = day.items.find((i) => i.id === itemId);
     if (!item) return;
-    item.value = Utils.toNumber(value, 0);
+    // Сохраняем как число, но пустую строку не превращаем в 0 во время набора —
+    // иначе мешает вводу. Для расчёта 0 при пустом значении.
+    const raw = String(value).trim();
+    item.value = raw === '' ? 0 : Utils.toNumber(raw, 0);
     this.recalculateAndRefresh();
+  }
+
+  /**
+   * Редактируется ли сейчас поле внутри списка показателей дня.
+   * @returns {boolean}
+   */
+  isEditingDayLineField() {
+    const active = document.activeElement;
+    if (!active || !active.closest) return false;
+    return Boolean(active.closest('#sales-lines, #operator-lines'));
   }
 
   /* ========================================================================
@@ -531,6 +584,7 @@ class UIController {
 
   renderAll() {
     this._suppressSave = true;
+    this.syncKpiFromInputs();
     this.calculation = this.activePeriod
       ? SalaryCalculator.calculatePeriod(this.activePeriod)
       : null;
@@ -538,6 +592,7 @@ class UIController {
     this.renderEmployeeList();
     this.renderPeriodControls();
     this.renderCitySelect();
+    this.renderSeasonality();
     this.renderWorkInfo();
     this.renderKpi();
     this.renderMonthTotals();
@@ -631,13 +686,44 @@ class UIController {
       ? Utils.formatMoney(city.hourlyRate)
       : '—';
 
-    const coef = DataService.getSeasonalityPercent(this.activePeriod.month);
-    const seasonalityEl = Utils.$('#period-seasonality');
-    if (seasonalityEl) {
-      seasonalityEl.textContent = Utils.formatSeasonality(coef, 'percent');
-      seasonalityEl.classList.toggle('is-positive', coef > 0);
-      seasonalityEl.classList.toggle('is-negative', coef < 0);
+    this.renderSeasonality();
+  }
+
+  /**
+   * Отображение коэффициента сезонности по текущему месяцу периода.
+   * Июль–декабрь: −10%, январь–июнь: +10%.
+   */
+  renderSeasonality() {
+    if (!this.activePeriod) return;
+
+    // Берём месяц из периода; для страховки сверяем с селектом
+    let month = Number(this.activePeriod.month);
+    const monthSelect = Utils.$('#period-month');
+    if (monthSelect && monthSelect.value !== '') {
+      const selectedMonth = Number(monthSelect.value);
+      if (Number.isFinite(selectedMonth) && selectedMonth >= 1 && selectedMonth <= 12) {
+        month = selectedMonth;
+      }
     }
+
+    const percent = this.calculation && Number.isFinite(this.calculation.seasonalityPercent)
+      ? this.calculation.seasonalityPercent
+      : DataService.getSeasonalityPercent(month);
+
+    const label = this.calculation && this.calculation.seasonalityLabel
+      ? this.calculation.seasonalityLabel
+      : Utils.formatSeasonality(percent, 'percent');
+
+    const targets = ['#period-seasonality', '#total-seasonality', '#stat-seasonality'];
+    targets.forEach((selector) => {
+      const el = Utils.$(selector);
+      if (!el) return;
+      el.textContent = label;
+      el.classList.remove('is-positive', 'is-negative', 'is-neutral');
+      if (percent > 0) el.classList.add('is-positive');
+      else if (percent < 0) el.classList.add('is-negative');
+      else el.classList.add('is-neutral');
+    });
   }
 
   renderWorkInfo() {
@@ -720,8 +806,14 @@ class UIController {
    * Статусы и итог блока «Фокусные KPI».
    */
   renderFocusBlock() {
-    if (!this.calculation || !this.calculation.kpi.focus) return;
-    const focus = this.calculation.kpi.focus;
+    if (!this.activePeriod) return;
+
+    // Всегда считаем заново по актуальным значениям модели
+    const focus = DataService.evaluateFocusGroup(this.activePeriod.kpi);
+    if (this.calculation && this.calculation.kpi) {
+      this.calculation.kpi.focus = focus;
+    }
+
     const statusMap = {
       focusSpd: '#focus-status-spd',
       focusCs: '#focus-status-cs',
@@ -749,13 +841,18 @@ class UIController {
       }
     });
 
-    Utils.$('#focus-passed').textContent = `${focus.passedCount} из ${focus.total}`;
-    Utils.$('#focus-failed').textContent = `${focus.failedCount} из ${focus.total}`;
+    const passedEl = Utils.$('#focus-passed');
+    const failedEl = Utils.$('#focus-failed');
+    if (passedEl) passedEl.textContent = `${focus.passedCount} из ${focus.total}`;
+    if (failedEl) failedEl.textContent = `${focus.failedCount} из ${focus.total}`;
+
     const mult = Utils.$('#focus-multiplier');
     if (mult) {
       mult.textContent = focus.labelText;
-      mult.classList.toggle('is-negative', focus.adjustment < 0);
-      mult.classList.toggle('is-neutral', focus.adjustment === 0);
+      mult.classList.remove('is-negative', 'is-neutral', 'is-positive');
+      if (focus.adjustment < 0) mult.classList.add('is-negative');
+      else if (focus.adjustment > 0) mult.classList.add('is-positive');
+      else mult.classList.add('is-neutral');
     }
   }
 
@@ -931,11 +1028,7 @@ class UIController {
       if (el) el.textContent = String(value);
     });
 
-    const coefEl = Utils.$('#total-seasonality');
-    if (coefEl) {
-      coefEl.classList.toggle('is-positive', c.seasonalityPercent > 0);
-      coefEl.classList.toggle('is-negative', c.seasonalityPercent < 0);
-    }
+    this.renderSeasonality();
 
     const kpiEl = Utils.$('#total-kpi-multiplier');
     if (kpiEl) {
@@ -1074,6 +1167,8 @@ class UIController {
     if (!dayData || !this.calculation) return;
 
     const dayResult = this.calculation.days.find((d) => d.day === this.selectedDay);
+    if (!dayResult) return;
+
     const dateLabel = Utils.formatDate(
       this.selectedDay,
       this.calculation.month,
@@ -1098,8 +1193,44 @@ class UIController {
       ? Utils.formatMoney(dayResult.total)
       : 'Нет данных';
 
-    this.renderLinesList(BLOCKS.SALES, '#sales-lines', DataService.getSalesIndicators());
-    this.renderLinesList(BLOCKS.OPERATOR, '#operator-lines', DataService.getOperatorIndicators());
+    // Не пересоздаём строки, если пользователь печатает в поле суммы/количества —
+    // иначе фокус теряется после каждой цифры.
+    if (this.isEditingDayLineField()) {
+      this.updateLineRowsMeta();
+    } else {
+      this.renderLinesList(BLOCKS.SALES, '#sales-lines', DataService.getSalesIndicators());
+      this.renderLinesList(BLOCKS.OPERATOR, '#operator-lines', DataService.getOperatorIndicators());
+    }
+  }
+
+  /**
+   * Обновляет ставку и начисление в уже отрисованных строках без потери фокуса.
+   */
+  updateLineRowsMeta() {
+    const day = this.getSelectedDayData();
+    if (!day) return;
+
+    Utils.$$('#sales-lines .line-row, #operator-lines .line-row').forEach((row) => {
+      const itemId = row.dataset.itemId;
+      if (!itemId) return;
+      const item = day.items.find((i) => i.id === itemId);
+      if (!item) return;
+
+      const calc = SalaryCalculator.calculateLine(item);
+      const rateEl = row.querySelector('[data-role="rate"]');
+      const accrualEl = row.querySelector('[data-role="accrual"]');
+      const labelEl = row.querySelector('[data-role="value-label"]');
+
+      if (rateEl) rateEl.textContent = Utils.formatRate(calc.rate, calc.rateType);
+      if (accrualEl) accrualEl.textContent = Utils.formatMoney(calc.accrual);
+
+      if (labelEl) {
+        const indicator = DataService.getIndicator(item.block, item.indicatorId);
+        labelEl.textContent = indicator && indicator.rateType === RATE_TYPES.FIXED
+          ? 'Количество'
+          : 'Сумма';
+      }
+    });
   }
 
   /**
@@ -1127,19 +1258,22 @@ class UIController {
         ? 'Количество'
         : 'Сумма';
 
-      const row = Utils.createElement('div', { className: 'line-row' });
+      const row = Utils.createElement('div', {
+        className: 'line-row',
+        dataset: { itemId: item.id }
+      });
       row.innerHTML = `
         <div class="line-row__field">
           <label>Показатель</label>
           <select data-role="indicator"></select>
         </div>
         <div class="line-row__field">
-          <label>${valueLabel}</label>
+          <label data-role="value-label">${valueLabel}</label>
           <input type="number" step="any" min="0" data-role="value" value="${item.value || ''}" placeholder="0"/>
         </div>
         <div class="line-row__meta">
-          <div><span>Ставка</span><strong>${Utils.formatRate(calc.rate, calc.rateType)}</strong></div>
-          <div><span>Начисление</span><strong>${Utils.formatMoney(calc.accrual)}</strong></div>
+          <div><span>Ставка</span><strong data-role="rate">${Utils.formatRate(calc.rate, calc.rateType)}</strong></div>
+          <div><span>Начисление</span><strong data-role="accrual">${Utils.formatMoney(calc.accrual)}</strong></div>
         </div>
         <button type="button" class="btn btn--ghost btn--icon" data-role="remove" title="Удалить строку">🗑</button>
       `;

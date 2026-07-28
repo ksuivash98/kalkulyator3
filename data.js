@@ -69,7 +69,14 @@ const SEASONALITY_BONUS_PERCENT = 10;
 const SEASONALITY_PENALTY_PERCENT = -10;
 
 /**
+ * Граница сезонов: месяцы 1..SEASONALITY_BONUS_UNTIL_MONTH — бонус,
+ * остальные до 12 — штраф.
+ */
+const SEASONALITY_BONUS_UNTIL_MONTH = 6;
+
+/**
  * Коэффициент сезонности по месяцам (1–12) — процентные пункты к бонусной части.
+ * Дублирует правило для явного просмотра и расширения.
  * @type {Readonly<Object<number, number>>}
  */
 const seasonality = Object.freeze({
@@ -661,15 +668,23 @@ class DataService {
   /**
    * Процент сезонности для месяца (только для премии).
    * Янв–июнь: +10, июл–дек: −10.
-   * @param {number} month - 1–12
+   * @param {number|string} month - 1–12
    * @returns {number} процентные пункты
    */
   static getSeasonalityPercent(month) {
-    const key = Number(month);
-    if (Object.prototype.hasOwnProperty.call(seasonality, key)) {
-      return seasonality[key];
+    const m = Number(month);
+    if (!Number.isFinite(m)) {
+      return DEFAULT_SEASONALITY_PERCENT;
     }
-    return DEFAULT_SEASONALITY_PERCENT;
+    const normalized = Math.trunc(m);
+    if (normalized < 1 || normalized > 12) {
+      return DEFAULT_SEASONALITY_PERCENT;
+    }
+    // Явная граница: 1–6 бонус, 7–12 штраф (без неоднозначного lookup)
+    if (normalized <= SEASONALITY_BONUS_UNTIL_MONTH) {
+      return SEASONALITY_BONUS_PERCENT;
+    }
+    return SEASONALITY_PENALTY_PERCENT;
   }
 
   /**
@@ -766,9 +781,22 @@ class DataService {
    */
   static evaluateFocusGroup(kpiValues) {
     const rule = DataService.getKpiRule('focus');
-    const threshold = rule.passThreshold;
+    const values = kpiValues || DataService.getDefaultKpiValues();
+
+    if (!rule || !Array.isArray(rule.metrics)) {
+      return {
+        metrics: [],
+        passedCount: 0,
+        failedCount: 0,
+        total: 0,
+        adjustment: 0,
+        labelText: '0%'
+      };
+    }
+
+    const threshold = Utils.toNumber(rule.passThreshold, 100);
     const metrics = rule.metrics.map((metric) => {
-      const percent = Utils.toNumber(kpiValues[metric.valueKey], 0);
+      const percent = Utils.toNumber(values[metric.valueKey], 0);
       const passed = percent >= threshold;
       return {
         id: metric.id,
@@ -783,7 +811,9 @@ class DataService {
     const total = metrics.length;
     const passedCount = metrics.filter((m) => m.passed).length;
     const failedCount = total - passedCount;
-    const adjustment = rule.failAdjustments[failedCount] ?? rule.failAdjustments[3];
+    const adjustment = Object.prototype.hasOwnProperty.call(rule.failAdjustments, failedCount)
+      ? rule.failAdjustments[failedCount]
+      : (rule.failAdjustments[3] || 0);
     return {
       metrics,
       passedCount,
