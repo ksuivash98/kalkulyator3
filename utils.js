@@ -84,12 +84,17 @@ class Utils {
 
   /**
    * Форматирование коэффициента сезонности для UI (+10% / −10%).
-   * @param {number} coefficient - например 1.10 или 0.90
+   * Принимает либо множитель (1.1 / 0.9), либо процентные пункты (+10 / −10).
+   * @param {number} value
+   * @param {'factor'|'percent'} [mode='factor']
    * @returns {string}
    */
-  static formatSeasonality(coefficient) {
-    const coef = Utils.toNumber(coefficient, 1);
-    const deltaPercent = Utils.roundMoney((coef - 1) * 100);
+  static formatSeasonality(value, mode = 'factor') {
+    if (mode === 'percent') {
+      return Utils.formatSignedPercent(value);
+    }
+    const coef = Utils.toNumber(value, 1);
+    const deltaPercent = Math.round((coef - 1) * 100);
     return Utils.formatSignedPercent(deltaPercent);
   }
 

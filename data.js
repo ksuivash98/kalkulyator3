@@ -61,28 +61,34 @@ const WEEKDAY_NAMES = Object.freeze([
 ]);
 
 /**
- * Коэффициент сезонности по месяцам (1–12).
- * Применяется ТОЛЬКО к премии, никогда к окладу.
- * Январь–июнь: +10% (1.10), июль–декабрь: −10% (0.90).
+ * Корректировка сезонности в процентных пунктах (только к премии).
+ * Январь–июнь: +10%, июль–декабрь: −10%.
+ * Оклад (часы × ставка) никогда не изменяется.
+ */
+const SEASONALITY_BONUS_PERCENT = 10;
+const SEASONALITY_PENALTY_PERCENT = -10;
+
+/**
+ * Коэффициент сезонности по месяцам (1–12) — процентные пункты к бонусной части.
  * @type {Readonly<Object<number, number>>}
  */
 const seasonality = Object.freeze({
-  1: 1.10,
-  2: 1.10,
-  3: 1.10,
-  4: 1.10,
-  5: 1.10,
-  6: 1.10,
-  7: 0.90,
-  8: 0.90,
-  9: 0.90,
-  10: 0.90,
-  11: 0.90,
-  12: 0.90
+  1: SEASONALITY_BONUS_PERCENT,
+  2: SEASONALITY_BONUS_PERCENT,
+  3: SEASONALITY_BONUS_PERCENT,
+  4: SEASONALITY_BONUS_PERCENT,
+  5: SEASONALITY_BONUS_PERCENT,
+  6: SEASONALITY_BONUS_PERCENT,
+  7: SEASONALITY_PENALTY_PERCENT,
+  8: SEASONALITY_PENALTY_PERCENT,
+  9: SEASONALITY_PENALTY_PERCENT,
+  10: SEASONALITY_PENALTY_PERCENT,
+  11: SEASONALITY_PENALTY_PERCENT,
+  12: SEASONALITY_PENALTY_PERCENT
 });
 
-/** Коэффициент сезонности по умолчанию */
-const DEFAULT_SEASONALITY = 1.0;
+/** Сезонность по умолчанию (0% — без изменения премии) */
+const DEFAULT_SEASONALITY_PERCENT = 0;
 
 /**
  * Порог выполнения фокусного KPI (>= = выполнен).
@@ -653,17 +659,50 @@ class DataService {
   }
 
   /**
-   * Коэффициент сезонности для месяца (только для премии).
+   * Процент сезонности для месяца (только для премии).
+   * Янв–июнь: +10, июл–дек: −10.
+   * @param {number} month - 1–12
+   * @returns {number} процентные пункты
+   */
+  static getSeasonalityPercent(month) {
+    const key = Number(month);
+    if (Object.prototype.hasOwnProperty.call(seasonality, key)) {
+      return seasonality[key];
+    }
+    return DEFAULT_SEASONALITY_PERCENT;
+  }
+
+  /**
+   * Множитель сезонности: 1 + percent/100.
+   * Например +10% → 1.1, −10% → 0.9.
    * @param {number} month - 1–12
    * @returns {number}
    */
   static getSeasonality(month) {
-    const value = seasonality[month];
-    return typeof value === 'number' ? value : DEFAULT_SEASONALITY;
+    return 1 + DataService.getSeasonalityPercent(month) / 100;
   }
 
   /**
-   * Объект коэффициентов сезонности (для расширения и отладки).
+   * Применить сезонность только к премии (оклад не трогаем).
+   * @param {number} premium
+   * @param {number} month - 1–12
+   * @returns {{percent: number, factor: number, premiumAfter: number, effect: number}}
+   */
+  static applySeasonalityToPremium(premium, month) {
+    const base = Utils.toNumber(premium, 0);
+    const percent = DataService.getSeasonalityPercent(month);
+    const factor = 1 + percent / 100;
+    const premiumAfter = Utils.roundMoney(base * factor);
+    return {
+      percent,
+      factor,
+      premiumAfter,
+      effect: Utils.roundMoney(premiumAfter - base)
+    };
+  }
+
+  /**
+   * Объект процентов сезонности (для расширения и отладки).
    * @returns {Readonly<Object<number, number>>}
    */
   static getSeasonalityMap() {

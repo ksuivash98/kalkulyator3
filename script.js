@@ -631,12 +631,12 @@ class UIController {
       ? Utils.formatMoney(city.hourlyRate)
       : '—';
 
-    const coef = DataService.getSeasonality(this.activePeriod.month);
+    const coef = DataService.getSeasonalityPercent(this.activePeriod.month);
     const seasonalityEl = Utils.$('#period-seasonality');
     if (seasonalityEl) {
-      seasonalityEl.textContent = Utils.formatSeasonality(coef);
-      seasonalityEl.classList.toggle('is-positive', coef > 1);
-      seasonalityEl.classList.toggle('is-negative', coef < 1);
+      seasonalityEl.textContent = Utils.formatSeasonality(coef, 'percent');
+      seasonalityEl.classList.toggle('is-positive', coef > 0);
+      seasonalityEl.classList.toggle('is-negative', coef < 0);
     }
   }
 
@@ -933,8 +933,8 @@ class UIController {
 
     const coefEl = Utils.$('#total-seasonality');
     if (coefEl) {
-      coefEl.classList.toggle('is-positive', c.seasonalityCoefficient > 1);
-      coefEl.classList.toggle('is-negative', c.seasonalityCoefficient < 1);
+      coefEl.classList.toggle('is-positive', c.seasonalityPercent > 0);
+      coefEl.classList.toggle('is-negative', c.seasonalityPercent < 0);
     }
 
     const kpiEl = Utils.$('#total-kpi-multiplier');

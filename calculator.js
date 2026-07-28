@@ -226,11 +226,18 @@ class SalaryCalculator {
     totalOperatorPremium = Utils.roundMoney(totalOperatorPremium);
     totalDaySalary = Utils.roundMoney(totalDaySalary);
 
-    // 1) Оклад уже рассчитан (salary)
+    // 1) Оклад уже рассчитан (salary) — сезонность к нему НЕ применяется
     // 2) totalPremium — премия до сезонности
-    // 3) Сезонность применяется ТОЛЬКО к премии
-    const seasonalityCoefficient = DataService.getSeasonality(period.month);
-    const premiumAfterSeasonality = Utils.roundMoney(totalPremium * seasonalityCoefficient);
+    // 3) Сезонность: янв–июнь +10% к премии, июл–дек −10% к премии
+    const seasonalityApplied = DataService.applySeasonalityToPremium(
+      totalPremium,
+      period.month
+    );
+    const seasonalityPercent = seasonalityApplied.percent;
+    const seasonalityCoefficient = seasonalityApplied.factor;
+    const premiumAfterSeasonality = seasonalityApplied.premiumAfter;
+    const seasonalityEffect = seasonalityApplied.effect;
+    const seasonalityLabel = Utils.formatSeasonality(seasonalityPercent, 'percent');
 
     // 4) Мультипликатор KPI применяется к премии после сезонности
     const kpiResult = DataService.calculateKpiMultiplier(
@@ -241,11 +248,8 @@ class SalaryCalculator {
       premiumAfterSeasonality * kpiResult.factor
     );
 
-    // 5) Итоговая зарплата
+    // 5) Итоговая зарплата = оклад (без сезонности) + финальная премия
     const payout = Utils.roundMoney(salary + finalPremium);
-    const seasonalityEffect = Utils.roundMoney(
-      premiumAfterSeasonality - totalPremium
-    );
     const maxPayout = Utils.roundMoney(salary + kpiResult.analytics.maxPremium);
     const payoutGap = Utils.roundMoney(maxPayout - payout);
 
@@ -317,10 +321,14 @@ class SalaryCalculator {
       salesCount,
       operatorCount,
       daysWithData,
-      /** Коэффициент сезонности месяца (только для премии) */
+      /** Коэффициент сезонности месяца (множитель, только для премии) */
       seasonalityCoefficient,
-      /** Текстовое представление коэффициента (+10% / −10%) */
-      seasonalityLabel: Utils.formatSeasonality(seasonalityCoefficient),
+      /** Процентные пункты сезонности (+10 / −10) */
+      seasonalityPercent,
+      /** Текстовое представление (+10% / −10%) */
+      seasonalityLabel,
+      /** Рублёвый эффект сезонности (премия_после − премия_до) */
+      seasonalityEffect,
       /** Премия после сезонности (до KPI) */
       premiumAfterSeasonality,
       /** @deprecated alias для совместимости */
@@ -373,7 +381,8 @@ class SalaryCalculator {
         kpiTotalAdjustment: kpiResult.totalAdjustment,
         kpiLabel: kpiResult.labelText,
         seasonalityCoefficient,
-        seasonalityLabel: Utils.formatSeasonality(seasonalityCoefficient),
+        seasonalityPercent,
+        seasonalityLabel,
         salary,
         payout
       }
