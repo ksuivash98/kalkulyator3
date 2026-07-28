@@ -66,7 +66,7 @@
         <div class="panel__head">
           <h2>Период и условия</h2>
         </div>
-        <div class="form-grid form-grid--4">
+        <div class="form-grid form-grid--5">
           <label class="field">
             <span class="field__label">Месяц</span>
             <select id="period-month"></select>
@@ -88,6 +88,10 @@
               <span class="field__label">Стоимость часа</span>
               <strong id="city-rate">—</strong>
             </div>
+          </div>
+          <div class="metric metric--accent">
+            <span class="field__label">Коэффициент сезонности</span>
+            <strong id="period-seasonality">+10%</strong>
           </div>
         </div>
       </div>
@@ -121,6 +125,144 @@
         </div>
       </div>
 
+      <!-- Мультипликатор KPI -->
+      <div class="panel" id="kpi-panel">
+        <div class="panel__head">
+          <h2>Мультипликатор KPI</h2>
+          <p class="panel__hint">Применяется только к премии после сезонности. Оклад не затрагивается.</p>
+        </div>
+
+        <div class="kpi-inputs">
+          <label class="field">
+            <span class="field__label">KPI 1. Личный план по SIM, %</span>
+            <input type="number" id="kpi-sim" min="0" step="0.1" placeholder="100"/>
+          </label>
+          <label class="field">
+            <span class="field__label">KPI 2. Конверсия салона, %</span>
+            <input type="number" id="kpi-conversion" min="0" step="0.1" placeholder="100"/>
+          </label>
+        </div>
+
+        <div class="focus-block">
+          <div class="focus-block__head">
+            <h3>KPI 3. Фокусные KPI операторов</h3>
+            <p class="panel__hint">Штраф один на весь блок — по числу невыполненных KPI (&lt;100%)</p>
+          </div>
+          <div class="kpi-inputs kpi-inputs--focus">
+            <label class="field" id="focus-field-spd">
+              <span class="field__label">ШПД (%)</span>
+              <input type="number" id="kpi-focus-spd" min="0" step="0.1" placeholder="100"/>
+              <span class="focus-status" id="focus-status-spd">🟡</span>
+            </label>
+            <label class="field" id="focus-field-cs">
+              <span class="field__label">ЦС и Подписки (%)</span>
+              <input type="number" id="kpi-focus-cs" min="0" step="0.1" placeholder="100"/>
+              <span class="focus-status" id="focus-status-cs">🟡</span>
+            </label>
+            <label class="field" id="focus-field-mnp">
+              <span class="field__label">MNP и ПА (%)</span>
+              <input type="number" id="kpi-focus-mnp" min="0" step="0.1" placeholder="100"/>
+              <span class="focus-status" id="focus-status-mnp">🟡</span>
+            </label>
+          </div>
+          <div class="focus-result" id="focus-result">
+            <div><span>Выполнено KPI</span><strong id="focus-passed">3 из 3</strong></div>
+            <div><span>Не выполнено KPI</span><strong id="focus-failed">0 из 3</strong></div>
+            <div><span>Мультипликатор</span><strong id="focus-multiplier">0%</strong></div>
+          </div>
+        </div>
+
+        <div class="kpi-inputs">
+          <label class="field">
+            <span class="field__label">KPI 4. Кредиты, %</span>
+            <input type="number" id="kpi-credits" min="0" step="0.1" placeholder="100"/>
+          </label>
+          <label class="field field--checkbox">
+            <span class="field__label">План по заявкам (для кредитов)</span>
+            <label class="checkbox-line">
+              <input type="checkbox" id="kpi-credits-plan-met"/>
+              <span>План по заявкам выполнен</span>
+            </label>
+          </label>
+          <label class="field">
+            <span class="field__label">KPI 5. Аксессуары + Услуги, %</span>
+            <input type="number" id="kpi-accessories" min="0" step="0.1" placeholder="100"/>
+          </label>
+          <label class="field">
+            <span class="field__label">KPI 6. Страхование (доля), %</span>
+            <input type="number" id="kpi-insurance" min="0" step="0.1" placeholder="100"/>
+          </label>
+        </div>
+
+        <div class="kpi-summary" aria-label="Итог мультипликатора KPI">
+          <div class="kpi-summary__list" id="kpi-breakdown-list"></div>
+          <div class="kpi-summary__total">
+            <span>Общий мультипликатор</span>
+            <strong id="kpi-total-multiplier">0%</strong>
+          </div>
+          <div class="kpi-summary__money">
+            <div>
+              <span>Премия до KPI</span>
+              <strong id="kpi-premium-before">0,00 ₽</strong>
+            </div>
+            <div>
+              <span>Премия после KPI</span>
+              <strong id="kpi-premium-after">0,00 ₽</strong>
+            </div>
+            <div class="kpi-summary__payout">
+              <span>Итого к выплате</span>
+              <strong id="kpi-payout">0,00 ₽</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Потери и возможности -->
+      <div class="panel" id="kpi-opportunities-panel">
+        <div class="panel__head">
+          <h2>Потери и возможности</h2>
+          <p class="panel__hint">Анализ по каждому KPI относительно премии после сезонности</p>
+        </div>
+        <div id="kpi-opportunities" class="opportunity-grid"></div>
+      </div>
+
+      <!-- Общая аналитика -->
+      <div class="panel" id="kpi-analytics-panel">
+        <div class="panel__head">
+          <h2>Общая аналитика</h2>
+        </div>
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <span>Общая премия до KPI</span>
+            <strong id="analytics-premium-before">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card">
+            <span>Сумма сезонного коэффициента</span>
+            <strong id="analytics-seasonality-effect">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card">
+            <span>Финальная премия</span>
+            <strong id="analytics-final-premium">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card analytics-card--penalty">
+            <span>Потери из-за KPI</span>
+            <strong id="analytics-losses">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card analytics-card--bonus">
+            <span>Доход от ближайших целей</span>
+            <strong id="analytics-next-goals">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card analytics-card--bonus">
+            <span>Максимально возможная премия</span>
+            <strong id="analytics-max-premium">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card analytics-card--gap">
+            <span>До максимальной зарплаты</span>
+            <strong id="analytics-payout-gap">0,00 ₽</strong>
+          </div>
+        </div>
+      </div>
+
       <!-- Итоги месяца -->
       <div class="panel">
         <div class="panel__head">
@@ -130,14 +272,42 @@
           <div class="total-card"><span>Рабочих дней</span><strong id="total-work-days">0</strong></div>
           <div class="total-card"><span>Часов</span><strong id="total-hours">0,00</strong></div>
           <div class="total-card"><span>Среднее часов / день</span><strong id="total-avg-hours">0,00</strong></div>
-          <div class="total-card"><span>Общий оклад</span><strong id="total-salary">0,00 ₽</strong></div>
           <div class="total-card"><span>Сумма продаж</span><strong id="total-sales">0,00 ₽</strong></div>
-          <div class="total-card"><span>Общая премия</span><strong id="total-premium">0,00 ₽</strong></div>
-          <div class="total-card"><span>Средняя премия / день</span><strong id="total-avg-premium">0,00 ₽</strong></div>
           <div class="total-card"><span>Средняя продажа / день</span><strong id="total-avg-sales">0,00 ₽</strong></div>
           <div class="total-card"><span>Операторских операций</span><strong id="total-ops-count">0</strong></div>
           <div class="total-card"><span>Количество продаж</span><strong id="total-sales-count">0</strong></div>
-          <div class="total-card total-card--highlight"><span>Итого к выплате</span><strong id="total-payout">0,00 ₽</strong></div>
+          <div class="total-card"><span>Средняя премия / день</span><strong id="total-avg-premium">0,00 ₽</strong></div>
+        </div>
+
+        <div class="payout-breakdown" aria-label="Расчёт к выплате">
+          <div class="payout-row">
+            <span>Оклад</span>
+            <strong id="total-salary">0,00 ₽</strong>
+          </div>
+          <div class="payout-row">
+            <span>Премия до сезонности</span>
+            <strong id="total-premium">0,00 ₽</strong>
+          </div>
+          <div class="payout-row payout-row--coef">
+            <span>Коэффициент сезонности</span>
+            <strong id="total-seasonality">+10%</strong>
+          </div>
+          <div class="payout-row">
+            <span>Премия после сезонности</span>
+            <strong id="total-adjusted-premium">0,00 ₽</strong>
+          </div>
+          <div class="payout-row payout-row--coef">
+            <span>Мультипликатор KPI</span>
+            <strong id="total-kpi-multiplier">0%</strong>
+          </div>
+          <div class="payout-row">
+            <span>Премия после KPI</span>
+            <strong id="total-final-premium">0,00 ₽</strong>
+          </div>
+          <div class="payout-row payout-row--total">
+            <span>Итого к выплате</span>
+            <strong id="total-payout">0,00 ₽</strong>
+          </div>
         </div>
       </div>
 
@@ -209,8 +379,28 @@
           </article>
           <article class="stat-card">
             <span class="stat-card__icon" aria-hidden="true">💎</span>
-            <span class="stat-card__label">Общая премия</span>
+            <span class="stat-card__label">Премия до сезонности</span>
             <strong id="stat-premium" class="stat-card__value">0,00 ₽</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">🌤</span>
+            <span class="stat-card__label">Коэффициент сезонности</span>
+            <strong id="stat-seasonality" class="stat-card__value">+10%</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">✨</span>
+            <span class="stat-card__label">Премия после сезонности</span>
+            <strong id="stat-adjusted-premium" class="stat-card__value">0,00 ₽</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">🎯</span>
+            <span class="stat-card__label">Мультипликатор KPI</span>
+            <strong id="stat-kpi" class="stat-card__value">0%</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">🏁</span>
+            <span class="stat-card__label">Премия после KPI</span>
+            <strong id="stat-final-premium" class="stat-card__value">0,00 ₽</strong>
           </article>
           <article class="stat-card">
             <span class="stat-card__icon" aria-hidden="true">⏱</span>

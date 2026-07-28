@@ -166,6 +166,8 @@ class EmployeePeriod {
     this.workDays = Utils.toNumber(data.workDays, 0);
     /** @type {number} */
     this.workHours = Utils.toNumber(data.workHours, 0);
+    /** @type {Object} */
+    this.kpi = EmployeePeriod.normalizeKpi(data.kpi);
     /** @type {Object<string, DayData>} */
     this.days = {};
 
@@ -175,6 +177,34 @@ class EmployeePeriod {
       const daySource = data.days && data.days[key] ? data.days[key] : {};
       this.days[key] = DayData.fromJSON(d, daySource);
     }
+  }
+
+  /**
+   * Нормализация введённых KPI-значений периода.
+   * @param {Object} [kpi]
+   * @returns {Object}
+   */
+  static normalizeKpi(kpi = {}) {
+    const defaults = DataService.getDefaultKpiValues();
+    // Миграция со старого флага applicationsPlanNotMet
+    let applicationsPlanMet = defaults.applicationsPlanMet;
+    if (typeof kpi.applicationsPlanMet === 'boolean') {
+      applicationsPlanMet = kpi.applicationsPlanMet;
+    } else if (typeof kpi.applicationsPlanNotMet === 'boolean') {
+      applicationsPlanMet = !kpi.applicationsPlanNotMet;
+    }
+
+    return {
+      sim: Utils.toNumber(kpi.sim, defaults.sim),
+      conversion: Utils.toNumber(kpi.conversion, defaults.conversion),
+      focusSpd: Utils.toNumber(kpi.focusSpd, defaults.focusSpd),
+      focusCs: Utils.toNumber(kpi.focusCs, defaults.focusCs),
+      focusMnp: Utils.toNumber(kpi.focusMnp, defaults.focusMnp),
+      credits: Utils.toNumber(kpi.credits, defaults.credits),
+      applicationsPlanMet,
+      accessories: Utils.toNumber(kpi.accessories, defaults.accessories),
+      insurance: Utils.toNumber(kpi.insurance, defaults.insurance)
+    };
   }
 
   /**
@@ -243,6 +273,7 @@ class EmployeePeriod {
       cityId: this.cityId,
       workDays: this.workDays,
       workHours: this.workHours,
+      kpi: { ...this.kpi },
       days
     };
   }

@@ -383,6 +383,14 @@ img {
   color: var(--accent-strong);
 }
 
+.metric--accent strong.is-positive {
+  color: var(--success);
+}
+
+.metric--accent strong.is-negative {
+  color: var(--warning);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -559,6 +567,424 @@ img {
 .stat-card--hero .stat-card__value {
   color: var(--accent-strong);
   font-size: 1.2rem;
+}
+
+/* Блок расчёта к выплате с коэффициентом сезонности */
+.payout-breakdown {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-soft);
+}
+
+.payout-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.payout-row:last-child {
+  border-bottom: none;
+}
+
+.payout-row span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.payout-row strong {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.payout-row--coef strong.is-positive {
+  color: var(--success);
+}
+
+.payout-row--coef strong.is-negative {
+  color: var(--warning);
+}
+
+.payout-row--total {
+  background: linear-gradient(145deg, var(--accent-soft), transparent);
+}
+
+.payout-row--total span,
+.payout-row--total strong {
+  color: var(--accent-strong);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+/* ============================================================================
+ * KPI multiplier
+ * ========================================================================== */
+
+.kpi-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.focus-block {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-soft);
+}
+
+.focus-block__head {
+  margin-bottom: var(--space-4);
+}
+
+.focus-block__head h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.kpi-inputs--focus {
+  margin-bottom: var(--space-4);
+}
+
+.kpi-inputs--focus .field {
+  position: relative;
+}
+
+.focus-status {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.focus-status.is-passed {
+  color: var(--success);
+}
+
+.focus-status.is-failed {
+  color: var(--danger);
+}
+
+.field--passed input {
+  border-color: rgba(31, 138, 76, 0.45);
+}
+
+.field--failed input {
+  border-color: rgba(194, 59, 59, 0.45);
+}
+
+.focus-result {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.focus-result > div {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.focus-result span {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.focus-result strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-result strong.is-negative {
+  color: var(--danger);
+}
+
+.focus-result strong.is-neutral {
+  color: var(--warning);
+}
+
+@media (max-width: 700px) {
+  .focus-result {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field--checkbox {
+  justify-content: flex-end;
+}
+
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-soft);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.checkbox-line input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.kpi-summary {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-soft);
+}
+
+.kpi-summary__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-line span {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.kpi-line strong.is-positive,
+.kpi-summary__total strong.is-positive,
+#total-kpi-multiplier.is-positive {
+  color: var(--success);
+}
+
+.kpi-line strong.is-negative,
+.kpi-summary__total strong.is-negative,
+#total-kpi-multiplier.is-negative {
+  color: var(--warning);
+}
+
+.kpi-summary__total {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--accent-soft);
+  font-weight: 800;
+}
+
+.kpi-summary__money {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+
+.kpi-summary__money > div {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-right: 1px solid var(--border);
+}
+
+.kpi-summary__money > div:last-child {
+  border-right: none;
+}
+
+.kpi-summary__money span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.kpi-summary__money strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-summary__payout {
+  background: linear-gradient(145deg, var(--accent-soft), transparent);
+}
+
+.kpi-summary__payout span,
+.kpi-summary__payout strong {
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .kpi-summary__money {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-summary__money > div {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .kpi-summary__money > div:last-child {
+    border-bottom: none;
+  }
+}
+
+.kpi-line--bonus strong,
+.opportunity-card--bonus .kpi-tone,
+.opportunity-card .is-positive,
+.analytics-card .is-positive {
+  color: var(--success);
+}
+
+.kpi-line--penalty strong,
+.opportunity-card--penalty .kpi-tone,
+.opportunity-card .is-negative,
+.analytics-card .is-negative {
+  color: var(--danger);
+}
+
+.kpi-line--neutral strong,
+.opportunity-card--neutral .kpi-tone {
+  color: var(--warning);
+}
+
+.opportunity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.opportunity-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--bg-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.opportunity-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.opportunity-card--bonus {
+  border-color: rgba(31, 138, 76, 0.35);
+  background: linear-gradient(160deg, rgba(31, 138, 76, 0.08), var(--bg-soft));
+}
+
+.opportunity-card--penalty {
+  border-color: rgba(194, 59, 59, 0.35);
+  background: linear-gradient(160deg, rgba(194, 59, 59, 0.08), var(--bg-soft));
+}
+
+.opportunity-card--neutral {
+  border-color: rgba(196, 122, 26, 0.35);
+  background: linear-gradient(160deg, rgba(196, 122, 26, 0.08), var(--bg-soft));
+}
+
+.opportunity-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.opportunity-card__head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.opportunity-card__badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.opportunity-metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.86rem;
+}
+
+.opportunity-metric span {
+  color: var(--text-muted);
+}
+
+.opportunity-metric strong {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.opportunity-card__done {
+  margin: 0;
+  color: var(--success);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.analytics-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--bg-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.analytics-card span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.analytics-card strong {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.analytics-card--bonus {
+  background: linear-gradient(160deg, rgba(31, 138, 76, 0.1), var(--bg-soft));
+}
+
+.analytics-card--penalty {
+  background: linear-gradient(160deg, rgba(194, 59, 59, 0.1), var(--bg-soft));
+}
+
+.analytics-card--gap {
+  background: linear-gradient(145deg, var(--accent-soft), var(--bg-soft));
+}
+
+.analytics-card--gap strong {
+  color: var(--accent-strong);
 }
 
 .stat-card__icon {

@@ -384,7 +384,18 @@ class ExportService {
     push(['Средняя зарплата за день', calculation.avgSalaryPerDay]);
     push([]);
     push(['Общая сумма продаж', calculation.totalSales]);
-    push(['Общая премия', calculation.totalPremium]);
+    push(['Премия до сезонности', calculation.totalPremium]);
+    push(['Коэффициент сезонности', calculation.seasonalityLabel]);
+    push(['Премия после сезонности', calculation.premiumAfterSeasonality]);
+    push(['Мультипликатор KPI', calculation.kpi.labelText]);
+    calculation.kpi.items.forEach((item) => {
+      push([`KPI: ${item.fullName}`, item.labelText]);
+    });
+    push(['Премия после KPI', calculation.finalPremium]);
+    push(['Потери из-за KPI', calculation.kpi.analytics.lossesTotal]);
+    push(['Доход от ближайших целей', calculation.kpi.analytics.nextGoalsGain]);
+    push(['Максимально возможная премия', calculation.kpi.analytics.maxPremium]);
+    push(['До максимальной зарплаты', calculation.payoutGap]);
     push(['Средняя премия за день', calculation.avgPremiumPerDay]);
     push(['Средняя продажа за день', calculation.avgSalesPerDay]);
     push(['Количество продаж', calculation.salesCount]);
@@ -564,8 +575,48 @@ class ExportService {
     <div class="card"><div class="label">Часов</div><div class="value">${Utils.formatNumber(calculation.workHours)}</div></div>
     <div class="card"><div class="label">Оклад</div><div class="value">${Utils.formatMoney(calculation.salary)}</div></div>
     <div class="card"><div class="label">Продажи</div><div class="value">${Utils.formatMoney(calculation.totalSales)}</div></div>
-    <div class="card"><div class="label">Премия</div><div class="value">${Utils.formatMoney(calculation.totalPremium)}</div></div>
+    <div class="card"><div class="label">Премия до сезонности</div><div class="value">${Utils.formatMoney(calculation.totalPremium)}</div></div>
+    <div class="card"><div class="label">Коэффициент сезонности</div><div class="value">${Utils.escapeHtml(calculation.seasonalityLabel)}</div></div>
+    <div class="card"><div class="label">Премия после сезонности</div><div class="value">${Utils.formatMoney(calculation.premiumAfterSeasonality)}</div></div>
+    <div class="card"><div class="label">Мультипликатор KPI</div><div class="value">${Utils.escapeHtml(calculation.kpi.labelText)}</div></div>
+    <div class="card"><div class="label">Премия после KPI</div><div class="value">${Utils.formatMoney(calculation.finalPremium)}</div></div>
     <div class="card"><div class="label">Итого к выплате</div><div class="value">${Utils.formatMoney(calculation.payout)}</div></div>
+  </div>
+
+  <h2>Мультипликатор KPI</h2>
+  <table>
+    <thead>
+      <tr><th>Показатель</th><th class="num">Выполнение</th><th class="num">Корректировка</th></tr>
+    </thead>
+    <tbody>
+      ${calculation.kpi.items.map((item) => {
+        const value = item.inputType === 'focus_group' && item.focus
+          ? `${item.focus.passedCount}/${item.focus.total} выполнено`
+          : `${Utils.formatNumber(item.percent, 1)}%`;
+        return `
+        <tr>
+          <td>${Utils.escapeHtml(item.fullName)}</td>
+          <td class="num">${Utils.escapeHtml(value)}</td>
+          <td class="num">${Utils.escapeHtml(item.labelText)}</td>
+        </tr>`;
+      }).join('')}
+      <tr>
+        <td><strong>Общий мультипликатор</strong></td>
+        <td class="num"></td>
+        <td class="num"><strong>${Utils.escapeHtml(calculation.kpi.labelText)}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Общая аналитика</h2>
+  <div class="cards">
+    <div class="card"><div class="label">Премия до KPI</div><div class="value">${Utils.formatMoney(calculation.kpi.analytics.premiumBeforeKpi)}</div></div>
+    <div class="card"><div class="label">Сезонный эффект</div><div class="value">${Utils.formatMoney(calculation.kpi.analytics.seasonalityEffect)}</div></div>
+    <div class="card"><div class="label">Финальная премия</div><div class="value">${Utils.formatMoney(calculation.finalPremium)}</div></div>
+    <div class="card"><div class="label">Потери из-за KPI</div><div class="value">${Utils.formatMoney(calculation.kpi.analytics.lossesTotal)}</div></div>
+    <div class="card"><div class="label">Ближайшие цели</div><div class="value">${Utils.formatMoney(calculation.kpi.analytics.nextGoalsGain)}</div></div>
+    <div class="card"><div class="label">Макс. премия</div><div class="value">${Utils.formatMoney(calculation.kpi.analytics.maxPremium)}</div></div>
+    <div class="card"><div class="label">До макс. зарплаты</div><div class="value">${Utils.formatMoney(calculation.payoutGap)}</div></div>
   </div>
 
   <h2>Итоги по дням</h2>

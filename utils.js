@@ -83,6 +83,36 @@ class Utils {
   }
 
   /**
+   * Форматирование коэффициента сезонности для UI (+10% / −10%).
+   * @param {number} coefficient - например 1.10 или 0.90
+   * @returns {string}
+   */
+  static formatSeasonality(coefficient) {
+    const coef = Utils.toNumber(coefficient, 1);
+    const deltaPercent = Utils.roundMoney((coef - 1) * 100);
+    return Utils.formatSignedPercent(deltaPercent);
+  }
+
+  /**
+   * Форматирование процентных пунктов со знаком (+10% / −2,5% / 0%).
+   * @param {number} points
+   * @returns {string}
+   */
+  static formatSignedPercent(points) {
+    const value = Utils.roundMoney(Utils.toNumber(points, 0));
+    const abs = Math.abs(value);
+    const formatted = Number.isInteger(abs)
+      ? String(abs)
+      : abs.toLocaleString('ru-RU', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+    if (value > 0) return `+${formatted}%`;
+    if (value < 0) return `−${formatted}%`;
+    return '0%';
+  }
+
+  /**
    * Форматирование числа с разделителями.
    * @param {number} value
    * @param {number} [decimals=2]

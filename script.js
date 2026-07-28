@@ -120,6 +120,7 @@ class UIController {
     if (!this.activePeriod) return;
     this.calculation = SalaryCalculator.calculatePeriod(this.activePeriod);
     this.renderWorkInfo();
+    this.renderKpi();
     this.renderMonthTotals();
     this.renderStats();
     this.renderDaysList();
@@ -164,6 +165,28 @@ class UIController {
     });
     Utils.$('#work-hours').addEventListener('input', (e) => {
       this.activePeriod.workHours = Utils.toNumber(e.target.value, 0);
+      this.recalculateAndRefresh();
+    });
+
+    // KPI
+    const kpiPercentFields = [
+      ['#kpi-sim', 'sim'],
+      ['#kpi-conversion', 'conversion'],
+      ['#kpi-focus-spd', 'focusSpd'],
+      ['#kpi-focus-cs', 'focusCs'],
+      ['#kpi-focus-mnp', 'focusMnp'],
+      ['#kpi-credits', 'credits'],
+      ['#kpi-accessories', 'accessories'],
+      ['#kpi-insurance', 'insurance']
+    ];
+    kpiPercentFields.forEach(([selector, key]) => {
+      Utils.$(selector).addEventListener('input', (e) => {
+        this.activePeriod.kpi[key] = Utils.toNumber(e.target.value, 0);
+        this.recalculateAndRefresh();
+      });
+    });
+    Utils.$('#kpi-credits-plan-met').addEventListener('change', (e) => {
+      this.activePeriod.kpi.applicationsPlanMet = Boolean(e.target.checked);
       this.recalculateAndRefresh();
     });
 
@@ -516,6 +539,7 @@ class UIController {
     this.renderPeriodControls();
     this.renderCitySelect();
     this.renderWorkInfo();
+    this.renderKpi();
     this.renderMonthTotals();
     this.renderStats();
     this.renderTabs();
@@ -606,6 +630,14 @@ class UIController {
     Utils.$('#city-rate').textContent = city
       ? Utils.formatMoney(city.hourlyRate)
       : '—';
+
+    const coef = DataService.getSeasonality(this.activePeriod.month);
+    const seasonalityEl = Utils.$('#period-seasonality');
+    if (seasonalityEl) {
+      seasonalityEl.textContent = Utils.formatSeasonality(coef);
+      seasonalityEl.classList.toggle('is-positive', coef > 1);
+      seasonalityEl.classList.toggle('is-negative', coef < 1);
+    }
   }
 
   renderWorkInfo() {
@@ -623,6 +655,257 @@ class UIController {
     Utils.$('#avg-salary-day').textContent = Utils.formatMoney(this.calculation.avgSalaryPerDay);
   }
 
+  /**
+   * Рендер блока мультипликатора KPI, потерь и аналитики.
+   */
+  renderKpi() {
+    if (!this.activePeriod || !this.calculation) return;
+    const kpi = this.activePeriod.kpi;
+
+    const setIfNotFocused = (selector, value) => {
+      const el = Utils.$(selector);
+      if (!el) return;
+      if (document.activeElement !== el) {
+        el.value = value;
+      }
+    };
+
+    setIfNotFocused('#kpi-sim', kpi.sim);
+    setIfNotFocused('#kpi-conversion', kpi.conversion);
+    setIfNotFocused('#kpi-focus-spd', kpi.focusSpd);
+    setIfNotFocused('#kpi-focus-cs', kpi.focusCs);
+    setIfNotFocused('#kpi-focus-mnp', kpi.focusMnp);
+    setIfNotFocused('#kpi-credits', kpi.credits);
+    setIfNotFocused('#kpi-accessories', kpi.accessories);
+    setIfNotFocused('#kpi-insurance', kpi.insurance);
+
+    const planMet = Utils.$('#kpi-credits-plan-met');
+    if (planMet && document.activeElement !== planMet) {
+      planMet.checked = Boolean(kpi.applicationsPlanMet);
+    }
+
+    this.renderFocusBlock();
+
+    const list = Utils.$('#kpi-breakdown-list');
+    if (list) {
+      list.innerHTML = this.calculation.kpi.items.map((item) => `
+        <div class="kpi-line kpi-line--${item.status}">
+          <span>${Utils.escapeHtml(item.fullName)}</span>
+          <strong>${Utils.escapeHtml(item.labelText)}</strong>
+        </div>
+      `).join('');
+    }
+
+    const totalEl = Utils.$('#kpi-total-multiplier');
+    if (totalEl) {
+      totalEl.textContent = this.calculation.kpi.labelText;
+      totalEl.classList.toggle('is-positive', this.calculation.kpi.totalAdjustment > 0);
+      totalEl.classList.toggle('is-negative', this.calculation.kpi.totalAdjustment < 0);
+      totalEl.classList.toggle('is-neutral', this.calculation.kpi.totalAdjustment === 0);
+    }
+
+    Utils.$('#kpi-premium-before').textContent = Utils.formatMoney(
+      this.calculation.premiumAfterSeasonality
+    );
+    Utils.$('#kpi-premium-after').textContent = Utils.formatMoney(
+      this.calculation.finalPremium
+    );
+    Utils.$('#kpi-payout').textContent = Utils.formatMoney(this.calculation.payout);
+
+    this.renderKpiOpportunities();
+    this.renderKpiAnalytics();
+  }
+
+  /**
+   * Статусы и итог блока «Фокусные KPI».
+   */
+  renderFocusBlock() {
+    if (!this.calculation || !this.calculation.kpi.focus) return;
+    const focus = this.calculation.kpi.focus;
+    const statusMap = {
+      focusSpd: '#focus-status-spd',
+      focusCs: '#focus-status-cs',
+      focusMnp: '#focus-status-mnp'
+    };
+    const fieldMap = {
+      focusSpd: '#focus-field-spd',
+      focusCs: '#focus-field-cs',
+      focusMnp: '#focus-field-mnp'
+    };
+
+    focus.metrics.forEach((metric) => {
+      const statusEl = Utils.$(statusMap[metric.id]);
+      const fieldEl = Utils.$(fieldMap[metric.id]);
+      if (statusEl) {
+        statusEl.textContent = metric.passed
+          ? '🟢 Выполнен'
+          : '🔴 Не выполнен';
+        statusEl.classList.toggle('is-passed', metric.passed);
+        statusEl.classList.toggle('is-failed', !metric.passed);
+      }
+      if (fieldEl) {
+        fieldEl.classList.toggle('field--passed', metric.passed);
+        fieldEl.classList.toggle('field--failed', !metric.passed);
+      }
+    });
+
+    Utils.$('#focus-passed').textContent = `${focus.passedCount} из ${focus.total}`;
+    Utils.$('#focus-failed').textContent = `${focus.failedCount} из ${focus.total}`;
+    const mult = Utils.$('#focus-multiplier');
+    if (mult) {
+      mult.textContent = focus.labelText;
+      mult.classList.toggle('is-negative', focus.adjustment < 0);
+      mult.classList.toggle('is-neutral', focus.adjustment === 0);
+    }
+  }
+
+  /**
+   * Карточки «Потери и возможности».
+   */
+  renderKpiOpportunities() {
+    const container = Utils.$('#kpi-opportunities');
+    if (!container || !this.calculation) return;
+
+    container.innerHTML = this.calculation.kpi.opportunities.map((item) => {
+      const statusClass = `opportunity-card--${item.status}`;
+      const statusIcon = item.status === 'bonus' ? '🟢' : item.status === 'penalty' ? '🔴' : '🟡';
+      const statusText = item.status === 'bonus'
+        ? 'Бонус'
+        : item.status === 'penalty'
+          ? 'Штраф'
+          : 'Без изменений';
+
+      if (item.inputType === 'focus_group' && item.focus) {
+        const metricsHtml = item.focus.metrics.map((metric) => `
+          <div class="opportunity-metric">
+            <span>${Utils.escapeHtml(metric.label)}</span>
+            <strong class="${metric.passed ? 'is-positive' : 'is-negative'}">
+              ${Utils.formatNumber(metric.percent, 1)}% · ${metric.passed ? '🟢 Выполнен' : '🔴 Не выполнен'}
+            </strong>
+          </div>
+        `).join('');
+
+        const nextBlock = item.atMax
+          ? '<p class="opportunity-card__done">Все фокусные KPI выполнены</p>'
+          : `
+            <div class="opportunity-metric">
+              <span>${Utils.escapeHtml(item.nextHint || 'Закрыть ещё 1 KPI')}</span>
+              <strong class="is-positive">${Utils.formatMoney(item.recoverToNext)}</strong>
+            </div>
+            <div class="opportunity-metric">
+              <span>До нулевого штрафа (закрыть все)</span>
+              <strong class="is-positive">${Utils.formatMoney(item.gainToMax)}</strong>
+            </div>
+          `;
+
+        return `
+          <article class="opportunity-card ${statusClass}">
+            <div class="opportunity-card__head">
+              <h3>${Utils.escapeHtml(item.fullName)}</h3>
+              <span class="opportunity-card__badge">${statusIcon} ${statusText}</span>
+            </div>
+            <div class="opportunity-metric">
+              <span>Выполнено</span>
+              <strong>${item.focus.passedCount} из ${item.focus.total}</strong>
+            </div>
+            <div class="opportunity-metric">
+              <span>Не выполнено</span>
+              <strong>${item.focus.failedCount} из ${item.focus.total}</strong>
+            </div>
+            <div class="opportunity-metric">
+              <span>Мультипликатор блока</span>
+              <strong class="kpi-tone">${Utils.escapeHtml(item.currentLabel)}</strong>
+            </div>
+            ${item.loss < 0
+            ? `<div class="opportunity-metric"><span>Потеря</span><strong class="is-negative">${Utils.formatMoney(item.loss)}</strong></div>`
+            : ''}
+            ${metricsHtml}
+            ${nextBlock}
+          </article>
+        `;
+      }
+
+      let nextBlock = '<p class="opportunity-card__done">Достигнут максимальный уровень</p>';
+      if (!item.atMax && item.nextAdjustment !== null) {
+        const nextTitle = item.nextHint
+          ? item.nextHint
+          : `До следующего уровня (${item.nextThreshold}%)`;
+        nextBlock = `
+          <div class="opportunity-metric">
+            <span>${Utils.escapeHtml(nextTitle)}</span>
+            <strong>${item.nextHint ? Utils.escapeHtml(item.nextLabel) : `осталось ${Utils.formatNumber(item.remainingToNext, 1)}%`}</strong>
+          </div>
+          <div class="opportunity-metric">
+            <span>${item.recoverToNext >= 0 ? 'Вернете / получите' : 'Изменение'}</span>
+            <strong class="${item.recoverToNext >= 0 ? 'is-positive' : 'is-negative'}">${Utils.formatMoney(item.recoverToNext)}</strong>
+          </div>
+        `;
+      }
+
+      let maxBlock = '';
+      if (!item.atMax) {
+        maxBlock = `
+          <div class="opportunity-metric">
+            <span>До максимального уровня (${item.maxLabel})</span>
+            <strong>осталось ${Utils.formatNumber(item.remainingToMax, 1)}%</strong>
+          </div>
+          <div class="opportunity-metric">
+            <span>Дополнительно получите</span>
+            <strong class="is-positive">${Utils.formatMoney(item.gainToMax)}</strong>
+          </div>
+        `;
+      }
+
+      const lossBlock = item.loss < 0
+        ? `<div class="opportunity-metric"><span>Потеря</span><strong class="is-negative">${Utils.formatMoney(item.loss)}</strong></div>`
+        : item.currentMoney > 0
+          ? `<div class="opportunity-metric"><span>Текущий бонус</span><strong class="is-positive">${Utils.formatMoney(item.currentMoney)}</strong></div>`
+          : `<div class="opportunity-metric"><span>Влияние на премию</span><strong>0,00 ₽</strong></div>`;
+
+      return `
+        <article class="opportunity-card ${statusClass}">
+          <div class="opportunity-card__head">
+            <h3>${Utils.escapeHtml(item.fullName)}</h3>
+            <span class="opportunity-card__badge">${statusIcon} ${statusText}</span>
+          </div>
+          <div class="opportunity-metric">
+            <span>Выполнение</span>
+            <strong>${Utils.formatNumber(item.percent, 1)}%</strong>
+          </div>
+          <div class="opportunity-metric">
+            <span>Текущий коэффициент</span>
+            <strong class="kpi-tone">${Utils.escapeHtml(item.currentLabel)}</strong>
+          </div>
+          ${lossBlock}
+          ${nextBlock}
+          ${maxBlock}
+        </article>
+      `;
+    }).join('');
+  }
+
+  /**
+   * Итоговая аналитическая карточка.
+   */
+  renderKpiAnalytics() {
+    if (!this.calculation) return;
+    const a = this.calculation.kpi.analytics;
+
+    Utils.$('#analytics-premium-before').textContent = Utils.formatMoney(a.premiumBeforeKpi);
+    Utils.$('#analytics-seasonality-effect').textContent = Utils.formatMoney(a.seasonalityEffect);
+    Utils.$('#analytics-final-premium').textContent = Utils.formatMoney(a.finalPremium);
+    Utils.$('#analytics-losses').textContent = Utils.formatMoney(a.lossesTotal);
+    Utils.$('#analytics-next-goals').textContent = Utils.formatMoney(a.nextGoalsGain);
+    Utils.$('#analytics-max-premium').textContent = Utils.formatMoney(a.maxPremium);
+    Utils.$('#analytics-payout-gap').textContent = Utils.formatMoney(a.payoutGap);
+
+    const seasonEl = Utils.$('#analytics-seasonality-effect');
+    if (seasonEl) {
+      seasonEl.classList.toggle('is-positive', a.seasonalityEffect > 0);
+      seasonEl.classList.toggle('is-negative', a.seasonalityEffect < 0);
+    }
+  }
+
   renderMonthTotals() {
     if (!this.calculation) return;
     const c = this.calculation;
@@ -633,6 +916,10 @@ class UIController {
       '#total-salary': Utils.formatMoney(c.salary),
       '#total-sales': Utils.formatMoney(c.totalSales),
       '#total-premium': Utils.formatMoney(c.totalPremium),
+      '#total-seasonality': c.seasonalityLabel,
+      '#total-adjusted-premium': Utils.formatMoney(c.premiumAfterSeasonality),
+      '#total-kpi-multiplier': c.kpi.labelText,
+      '#total-final-premium': Utils.formatMoney(c.finalPremium),
       '#total-avg-premium': Utils.formatMoney(c.avgPremiumPerDay),
       '#total-avg-sales': Utils.formatMoney(c.avgSalesPerDay),
       '#total-ops-count': c.operatorCount,
@@ -643,6 +930,18 @@ class UIController {
       const el = Utils.$(selector);
       if (el) el.textContent = String(value);
     });
+
+    const coefEl = Utils.$('#total-seasonality');
+    if (coefEl) {
+      coefEl.classList.toggle('is-positive', c.seasonalityCoefficient > 1);
+      coefEl.classList.toggle('is-negative', c.seasonalityCoefficient < 1);
+    }
+
+    const kpiEl = Utils.$('#total-kpi-multiplier');
+    if (kpiEl) {
+      kpiEl.classList.toggle('is-positive', c.kpi.totalAdjustment > 0);
+      kpiEl.classList.toggle('is-negative', c.kpi.totalAdjustment < 0);
+    }
   }
 
   renderStats() {
@@ -662,6 +961,10 @@ class UIController {
     Utils.$('#stat-volume').textContent = Utils.formatMoney(s.totalSales);
     Utils.$('#stat-avg-check').textContent = Utils.formatMoney(s.avgCheck);
     Utils.$('#stat-premium').textContent = Utils.formatMoney(s.totalPremium);
+    Utils.$('#stat-seasonality').textContent = s.seasonalityLabel;
+    Utils.$('#stat-adjusted-premium').textContent = Utils.formatMoney(s.premiumAfterSeasonality);
+    Utils.$('#stat-kpi').textContent = s.kpiLabel;
+    Utils.$('#stat-final-premium').textContent = Utils.formatMoney(s.finalPremium);
     Utils.$('#stat-salary').textContent = Utils.formatMoney(s.salary);
     Utils.$('#stat-total').textContent = Utils.formatMoney(s.payout);
   }
