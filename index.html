@@ -369,13 +369,18 @@
           </article>
           <article class="stat-card">
             <span class="stat-card__icon" aria-hidden="true">🛒</span>
-            <span class="stat-card__label">Общий объём продаж</span>
+            <span class="stat-card__label">Общая сумма продаж</span>
             <strong id="stat-volume" class="stat-card__value">0,00 ₽</strong>
           </article>
           <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">📅</span>
+            <span class="stat-card__label">Средняя продажа в день</span>
+            <strong id="stat-avg-sales" class="stat-card__value">0,00 ₽</strong>
+          </article>
+          <article class="stat-card">
             <span class="stat-card__icon" aria-hidden="true">🧾</span>
-            <span class="stat-card__label">Средний чек продажи</span>
-            <strong id="stat-avg-check" class="stat-card__value">0,00 ₽</strong>
+            <span class="stat-card__label">Средний бонус в день</span>
+            <strong id="stat-avg-premium" class="stat-card__value">0,00 ₽</strong>
           </article>
           <article class="stat-card">
             <span class="stat-card__icon" aria-hidden="true">💎</span>
@@ -404,12 +409,22 @@
           </article>
           <article class="stat-card">
             <span class="stat-card__icon" aria-hidden="true">⏱</span>
-            <span class="stat-card__label">Оклад</span>
+            <span class="stat-card__label">Общий оклад</span>
             <strong id="stat-salary" class="stat-card__value">0,00 ₽</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">📉</span>
+            <span class="stat-card__label">Общие потери по KPI</span>
+            <strong id="stat-kpi-losses" class="stat-card__value">0,00 ₽</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-card__icon" aria-hidden="true">🚀</span>
+            <span class="stat-card__label">Макс. доп. бонус</span>
+            <strong id="stat-kpi-gap" class="stat-card__value">0,00 ₽</strong>
           </article>
           <article class="stat-card stat-card--hero">
             <span class="stat-card__icon" aria-hidden="true">💰</span>
-            <span class="stat-card__label">Итого</span>
+            <span class="stat-card__label">Итоговая зарплата</span>
             <strong id="stat-total" class="stat-card__value">0,00 ₽</strong>
           </article>
         </div>
@@ -455,14 +470,14 @@
 
         <div class="day-summary">
           <div><span>Оклад за день</span><strong id="day-summary-salary">0,00 ₽</strong></div>
-          <div><span>Продажи</span><strong id="day-summary-sales">0,00 ₽</strong></div>
+          <div><span>Экономический блок</span><strong id="day-summary-sales">0,00 ₽</strong></div>
           <div><span>Премия</span><strong id="day-summary-premium">0,00 ₽</strong></div>
           <div class="day-summary__total"><span>Итого за день</span><strong id="day-summary-total">Нет данных</strong></div>
         </div>
 
         <section class="block-section">
           <div class="block-section__head">
-            <h3>Продажи</h3>
+            <h3>Экономический блок</h3>
             <button type="button" id="btn-add-sales-line" class="btn btn--primary btn--sm">➕ Добавить показатель</button>
           </div>
           <div id="sales-lines" class="lines-list"></div>
@@ -490,12 +505,13 @@
 
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="data.js?v=20260729d"></script>
-  <script src="utils.js?v=20260729d"></script>
-  <script src="storage.js?v=20260729d"></script>
-  <script src="employee.js?v=20260729d"></script>
-  <script src="calculator.js?v=20260729d"></script>
-  <script src="export.js?v=20260729d"></script>
-  <script src="script.js?v=20260729d"></script>
+  <script src="data.js?v=20260819b"></script>
+  <script src="utils.js?v=20260819b"></script>
+  <script src="storage.js?v=20260819b"></script>
+  <script src="employee.js?v=20260819b"></script>
+  <script src="calculator.js?v=20260819b"></script>
+  <script src="export.js?v=20260819b"></script>
+  <script src="script.js?v=20260819b"></script>
+  <script src="ui.js?v=20260819b"></script>
 </body>
 </html>

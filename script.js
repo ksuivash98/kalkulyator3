@@ -118,17 +118,49 @@ class UIController {
    */
   recalculateAndRefresh() {
     if (!this.activePeriod) return;
-    this.syncKpiFromInputs();
-    this.calculation = SalaryCalculator.calculatePeriod(this.activePeriod);
-    this.renderWorkInfo();
-    this.renderSeasonality();
-    this.renderKpi();
-    this.renderMonthTotals();
-    this.renderStats();
-    this.renderDaysList();
-    this.renderCalendar();
-    this.renderDayModalIfOpen();
-    this.autoSave();
+
+    try {
+      this.syncPeriodFromInputs();
+      this.syncKpiFromInputs();
+      this.calculation = SalaryCalculator.calculatePeriod(this.activePeriod);
+      this.renderHeader();
+      this.renderCitySelect();
+      this.renderWorkInfo();
+      this.renderSeasonality();
+      this.renderKpi();
+      this.renderMonthTotals();
+      this.renderStats();
+      this.renderDaysList();
+      this.renderCalendar();
+      this.renderDayModalIfOpen();
+    } catch (error) {
+      console.error('recalculateAndRefresh', error);
+      Utils.showToast('Не удалось обновить расчёт на экране', 'error');
+    } finally {
+      this.autoSave();
+    }
+  }
+
+  /**
+   * Считывает город, рабочие дни и часы из формы в модель периода.
+   */
+  syncPeriodFromInputs() {
+    if (!this.activePeriod) return;
+
+    const citySelect = Utils.$('#city-select');
+    if (citySelect && citySelect.value) {
+      this.activePeriod.cityId = EmployeePeriod.normalizeCityId(citySelect.value);
+    }
+
+    const workDays = Utils.$('#work-days');
+    if (workDays) {
+      this.activePeriod.workDays = Utils.toNumber(workDays.value, 0);
+    }
+
+    const workHours = Utils.$('#work-hours');
+    if (workHours) {
+      this.activePeriod.workHours = Utils.toNumber(workHours.value, 0);
+    }
   }
 
   /**
@@ -175,37 +207,43 @@ class UIController {
   /**
    * Глобальные обработчики DOM.
    */
+  /**
+   * Безопасная привязка обработчика к элементу.
+   * @param {string} selector
+   * @param {string} eventName
+   * @param {Function} handler
+   */
+  bindEvent(selector, eventName, handler) {
+    const el = Utils.$(selector);
+    if (!el) {
+      console.warn(`UIController: элемент не найден — ${selector}`);
+      return;
+    }
+    el.addEventListener(eventName, handler);
+  }
+
   bindGlobalEvents() {
     // Тема
-    Utils.$('#btn-theme').addEventListener('click', () => this.toggleTheme());
+    this.bindEvent('#btn-theme', 'click', () => this.toggleTheme());
 
     // Сотрудники
-    Utils.$('#btn-employee-add').addEventListener('click', () => this.createEmployee());
-    Utils.$('#btn-employee-rename').addEventListener('click', () => this.renameEmployee());
-    Utils.$('#btn-employee-duplicate').addEventListener('click', () => this.duplicateEmployee());
-    Utils.$('#btn-employee-delete').addEventListener('click', () => this.deleteEmployee());
-    Utils.$('#employee-search').addEventListener('input', (e) => {
+    this.bindEvent('#btn-employee-add', 'click', () => this.createEmployee());
+    this.bindEvent('#btn-employee-rename', 'click', () => this.renameEmployee());
+    this.bindEvent('#btn-employee-duplicate', 'click', () => this.duplicateEmployee());
+    this.bindEvent('#btn-employee-delete', 'click', () => this.deleteEmployee());
+    this.bindEvent('#employee-search', 'input', (e) => {
       this.employeeSearch = e.target.value.trim().toLowerCase();
       this.renderEmployeeList();
     });
 
     // Период
-    Utils.$('#period-month').addEventListener('change', () => this.onPeriodChange());
-    Utils.$('#period-year').addEventListener('change', () => this.onPeriodChange());
+    this.bindEvent('#period-month', 'change', () => this.onPeriodChange());
+    this.bindEvent('#period-year', 'change', () => this.onPeriodChange());
 
     // Город и рабочее время
-    Utils.$('#city-select').addEventListener('change', (e) => {
-      this.activePeriod.cityId = e.target.value;
-      this.recalculateAndRefresh();
-    });
-    Utils.$('#work-days').addEventListener('input', (e) => {
-      this.activePeriod.workDays = Utils.toNumber(e.target.value, 0);
-      this.recalculateAndRefresh();
-    });
-    Utils.$('#work-hours').addEventListener('input', (e) => {
-      this.activePeriod.workHours = Utils.toNumber(e.target.value, 0);
-      this.recalculateAndRefresh();
-    });
+    this.bindEvent('#city-select', 'change', () => this.recalculateAndRefresh());
+    this.bindEvent('#work-days', 'input', () => this.recalculateAndRefresh());
+    this.bindEvent('#work-hours', 'input', () => this.recalculateAndRefresh());
 
     // KPI — делегирование на панель, чтобы не терять обработчики
     const kpiPanel = Utils.$('#kpi-panel');
@@ -240,33 +278,34 @@ class UIController {
     });
 
     // Экспорт
-    Utils.$('#btn-export-pdf').addEventListener('click', () => this.handleExportPdf());
-    Utils.$('#btn-export-excel').addEventListener('click', () => this.handleExportExcel());
-    Utils.$('#btn-export-json').addEventListener('click', () => this.handleExportJson());
-    Utils.$('#btn-import-json').addEventListener('click', () => {
-      Utils.$('#import-file').click();
+    this.bindEvent('#btn-export-pdf', 'click', () => this.handleExportPdf());
+    this.bindEvent('#btn-export-excel', 'click', () => this.handleExportExcel());
+    this.bindEvent('#btn-export-json', 'click', () => this.handleExportJson());
+    this.bindEvent('#btn-import-json', 'click', () => {
+      const input = Utils.$('#import-file');
+      if (input) input.click();
     });
-    Utils.$('#import-file').addEventListener('change', (e) => this.handleImportFile(e));
+    this.bindEvent('#import-file', 'change', (e) => this.handleImportFile(e));
 
     // Модальное окно дня
-    Utils.$('#day-modal-close').addEventListener('click', () => this.closeDayModal());
-    Utils.$('#day-modal-backdrop').addEventListener('click', () => this.closeDayModal());
-    Utils.$('#day-hours').addEventListener('input', (e) => this.onDayFieldChange('hours', e.target.value));
-    Utils.$('#day-comment').addEventListener('input', (e) => this.onDayFieldChange('comment', e.target.value));
-    Utils.$('#btn-add-sales-line').addEventListener('click', () => this.addDayLine(BLOCKS.SALES));
-    Utils.$('#btn-add-operator-line').addEventListener('click', () => this.addDayLine(BLOCKS.OPERATOR));
+    this.bindEvent('#day-modal-close', 'click', () => this.closeDayModal());
+    this.bindEvent('#day-modal-backdrop', 'click', () => this.closeDayModal());
+    this.bindEvent('#day-hours', 'input', (e) => this.onDayFieldChange('hours', e.target.value));
+    this.bindEvent('#day-comment', 'input', (e) => this.onDayFieldChange('comment', e.target.value));
+    this.bindEvent('#btn-add-sales-line', 'click', () => this.addDayLine(BLOCKS.SALES));
+    this.bindEvent('#btn-add-operator-line', 'click', () => this.addDayLine(BLOCKS.OPERATOR));
 
     // FAB меню
-    Utils.$('#fab-main').addEventListener('click', () => {
-      Utils.$('#fab-menu').classList.toggle('fab-menu--open');
+    this.bindEvent('#fab-main', 'click', () => {
+      Utils.$('#fab-menu')?.classList.toggle('fab-menu--open');
     });
-    Utils.$('#fab-add-employee').addEventListener('click', () => {
+    this.bindEvent('#fab-add-employee', 'click', () => {
       this.createEmployee();
-      Utils.$('#fab-menu').classList.remove('fab-menu--open');
+      Utils.$('#fab-menu')?.classList.remove('fab-menu--open');
     });
-    Utils.$('#fab-export').addEventListener('click', () => {
-      Utils.$('#export-panel').scrollIntoView({ behavior: 'smooth' });
-      Utils.$('#fab-menu').classList.remove('fab-menu--open');
+    this.bindEvent('#fab-export', 'click', () => {
+      Utils.$('#export-panel')?.scrollIntoView({ behavior: 'smooth' });
+      Utils.$('#fab-menu')?.classList.remove('fab-menu--open');
     });
 
     document.addEventListener('keydown', (e) => {
@@ -424,13 +463,24 @@ class UIController {
   }
 
   /**
+   * Возвращает ключ категории активного периода через выбранный город.
+   * @returns {string}
+   */
+  getActiveCategoryKey() {
+    if (!this.activePeriod) {
+      return EMPLOYEE_CATEGORIES.STANDARD;
+    }
+    return DataService.getCityCategoryKey(this.activePeriod.cityId);
+  }
+
+  /**
    * @param {string} block
    */
   addDayLine(block) {
     const day = this.getSelectedDayData();
     if (!day) return;
     const defaults = block === BLOCKS.SALES
-      ? DataService.getSalesIndicators()[0]
+      ? DataService.getEconomicIndicators()[0]
       : DataService.getOperatorIndicators()[0];
     day.addItem(block, defaults ? defaults.id : '', 0);
     this.recalculateAndRefresh();
@@ -584,6 +634,7 @@ class UIController {
 
   renderAll() {
     this._suppressSave = true;
+    this.syncPeriodFromInputs();
     this.syncKpiFromInputs();
     this.calculation = this.activePeriod
       ? SalaryCalculator.calculatePeriod(this.activePeriod)
@@ -681,10 +732,8 @@ class UIController {
 
     select.value = this.activePeriod.cityId;
     const city = DataService.getCity(this.activePeriod.cityId);
-    Utils.$('#city-category').textContent = city ? city.category : '—';
-    Utils.$('#city-rate').textContent = city
-      ? Utils.formatMoney(city.hourlyRate)
-      : '—';
+    Utils.setText('#city-category', city ? city.categoryLabel : '—');
+    Utils.setText('#city-rate', city ? Utils.formatMoney(city.hourlyRate) : '—');
 
     this.renderSeasonality();
   }
@@ -730,15 +779,15 @@ class UIController {
     if (!this.activePeriod || !this.calculation) return;
     const workDays = Utils.$('#work-days');
     const workHours = Utils.$('#work-hours');
-    if (document.activeElement !== workDays) {
+    if (workDays && document.activeElement !== workDays) {
       workDays.value = this.activePeriod.workDays || '';
     }
-    if (document.activeElement !== workHours) {
+    if (workHours && document.activeElement !== workHours) {
       workHours.value = this.activePeriod.workHours || '';
     }
-    Utils.$('#avg-hours').textContent = Utils.formatNumber(this.calculation.avgHoursPerDay);
-    Utils.$('#salary-value').textContent = Utils.formatMoney(this.calculation.salary);
-    Utils.$('#avg-salary-day').textContent = Utils.formatMoney(this.calculation.avgSalaryPerDay);
+    Utils.setText('#avg-hours', Utils.formatNumber(this.calculation.avgHoursPerDay));
+    Utils.setText('#salary-value', Utils.formatMoney(this.calculation.salary));
+    Utils.setText('#avg-salary-day', Utils.formatMoney(this.calculation.avgSalaryPerDay));
   }
 
   /**
@@ -790,13 +839,9 @@ class UIController {
       totalEl.classList.toggle('is-neutral', this.calculation.kpi.totalAdjustment === 0);
     }
 
-    Utils.$('#kpi-premium-before').textContent = Utils.formatMoney(
-      this.calculation.premiumAfterSeasonality
-    );
-    Utils.$('#kpi-premium-after').textContent = Utils.formatMoney(
-      this.calculation.finalPremium
-    );
-    Utils.$('#kpi-payout').textContent = Utils.formatMoney(this.calculation.payout);
+    Utils.setText('#kpi-premium-before', Utils.formatMoney(this.calculation.premiumAfterSeasonality));
+    Utils.setText('#kpi-premium-after', Utils.formatMoney(this.calculation.finalPremium));
+    Utils.setText('#kpi-payout', Utils.formatMoney(this.calculation.payout));
 
     this.renderKpiOpportunities();
     this.renderKpiAnalytics();
@@ -861,9 +906,12 @@ class UIController {
    */
   renderKpiOpportunities() {
     const container = Utils.$('#kpi-opportunities');
-    if (!container || !this.calculation) return;
+    if (!container || !this.calculation || !this.calculation.kpi) return;
+    const opportunities = Array.isArray(this.calculation.kpi.opportunities)
+      ? this.calculation.kpi.opportunities
+      : [];
 
-    container.innerHTML = this.calculation.kpi.opportunities.map((item) => {
+    container.innerHTML = opportunities.map((item) => {
       const statusClass = `opportunity-card--${item.status}`;
       const statusIcon = item.status === 'bonus' ? '🟢' : item.status === 'penalty' ? '🔴' : '🟡';
       const statusText = item.status === 'bonus'
@@ -985,16 +1033,16 @@ class UIController {
    * Итоговая аналитическая карточка.
    */
   renderKpiAnalytics() {
-    if (!this.calculation) return;
+    if (!this.calculation || !this.calculation.kpi || !this.calculation.kpi.analytics) return;
     const a = this.calculation.kpi.analytics;
 
-    Utils.$('#analytics-premium-before').textContent = Utils.formatMoney(a.premiumBeforeKpi);
-    Utils.$('#analytics-seasonality-effect').textContent = Utils.formatMoney(a.seasonalityEffect);
-    Utils.$('#analytics-final-premium').textContent = Utils.formatMoney(a.finalPremium);
-    Utils.$('#analytics-losses').textContent = Utils.formatMoney(a.lossesTotal);
-    Utils.$('#analytics-next-goals').textContent = Utils.formatMoney(a.nextGoalsGain);
-    Utils.$('#analytics-max-premium').textContent = Utils.formatMoney(a.maxPremium);
-    Utils.$('#analytics-payout-gap').textContent = Utils.formatMoney(a.payoutGap);
+    Utils.setText('#analytics-premium-before', Utils.formatMoney(a.premiumBeforeKpi));
+    Utils.setText('#analytics-seasonality-effect', Utils.formatMoney(a.seasonalityEffect));
+    Utils.setText('#analytics-final-premium', Utils.formatMoney(a.finalPremium));
+    Utils.setText('#analytics-losses', Utils.formatMoney(a.lossesTotal));
+    Utils.setText('#analytics-next-goals', Utils.formatMoney(a.nextGoalsGain));
+    Utils.setText('#analytics-max-premium', Utils.formatMoney(a.maxPremium));
+    Utils.setText('#analytics-payout-gap', Utils.formatMoney(a.payoutGap));
 
     const seasonEl = Utils.$('#analytics-seasonality-effect');
     if (seasonEl) {
@@ -1040,26 +1088,33 @@ class UIController {
   renderStats() {
     if (!this.calculation) return;
     const s = this.calculation.stats;
+    const kpiAnalytics = this.calculation.kpi?.analytics || {};
     const fmtDay = (dayResult, field) => {
       if (!dayResult) return 'Нет данных';
       const date = Utils.formatDate(dayResult.day, this.calculation.month, this.calculation.year);
       return `${date} · ${Utils.formatMoney(dayResult[field])}`;
     };
 
-    Utils.$('#stat-best-sales').textContent = fmtDay(s.bestSalesDay, 'salesTotal');
-    Utils.$('#stat-best-premium').textContent = fmtDay(s.bestPremiumDay, 'premium');
-    Utils.$('#stat-best-indicator').textContent = s.bestIndicator
-      ? `${s.bestIndicator.name} · ${Utils.formatMoney(s.bestIndicator.accrual)}`
-      : 'Нет данных';
-    Utils.$('#stat-volume').textContent = Utils.formatMoney(s.totalSales);
-    Utils.$('#stat-avg-check').textContent = Utils.formatMoney(s.avgCheck);
-    Utils.$('#stat-premium').textContent = Utils.formatMoney(s.totalPremium);
-    Utils.$('#stat-seasonality').textContent = s.seasonalityLabel;
-    Utils.$('#stat-adjusted-premium').textContent = Utils.formatMoney(s.premiumAfterSeasonality);
-    Utils.$('#stat-kpi').textContent = s.kpiLabel;
-    Utils.$('#stat-final-premium').textContent = Utils.formatMoney(s.finalPremium);
-    Utils.$('#stat-salary').textContent = Utils.formatMoney(s.salary);
-    Utils.$('#stat-total').textContent = Utils.formatMoney(s.payout);
+    Utils.setText('#stat-best-sales', fmtDay(s.bestSalesDay, 'salesTotal'));
+    Utils.setText('#stat-best-premium', fmtDay(s.bestPremiumDay, 'premium'));
+    Utils.setText(
+      '#stat-best-indicator',
+      s.bestIndicator
+        ? `${s.bestIndicator.name} · ${Utils.formatMoney(s.bestIndicator.accrual)}`
+        : 'Нет данных'
+    );
+    Utils.setText('#stat-volume', Utils.formatMoney(s.totalSales));
+    Utils.setText('#stat-avg-sales', Utils.formatMoney(this.calculation.avgSalesPerDay));
+    Utils.setText('#stat-avg-premium', Utils.formatMoney(this.calculation.avgPremiumPerDay));
+    Utils.setText('#stat-premium', Utils.formatMoney(s.totalPremium));
+    Utils.setText('#stat-seasonality', s.seasonalityLabel);
+    Utils.setText('#stat-adjusted-premium', Utils.formatMoney(s.premiumAfterSeasonality));
+    Utils.setText('#stat-kpi', s.kpiLabel);
+    Utils.setText('#stat-final-premium', Utils.formatMoney(s.finalPremium));
+    Utils.setText('#stat-salary', Utils.formatMoney(s.salary));
+    Utils.setText('#stat-kpi-losses', Utils.formatMoney(kpiAnalytics.lossesTotal || 0));
+    Utils.setText('#stat-kpi-gap', Utils.formatMoney(kpiAnalytics.premiumGap || 0));
+    Utils.setText('#stat-total', Utils.formatMoney(s.payout));
   }
 
   renderTabs() {
@@ -1101,7 +1156,7 @@ class UIController {
         <div class="day-card__grid">
           <div><span>Часы</span><strong>${Utils.formatNumber(day.hours)}</strong></div>
           <div><span>Оклад</span><strong>${Utils.formatMoney(day.daySalary)}</strong></div>
-          <div><span>Продажи</span><strong>${Utils.formatMoney(day.salesTotal)}</strong></div>
+        <div><span>Экономический блок</span><strong>${Utils.formatMoney(day.salesTotal)}</strong></div>
           <div><span>Премия</span><strong>${Utils.formatMoney(day.premium)}</strong></div>
         </div>
         ${day.comment ? `<p class="day-card__comment">${Utils.escapeHtml(day.comment)}</p>` : ''}
@@ -1175,30 +1230,31 @@ class UIController {
       this.calculation.year
     );
 
-    Utils.$('#day-modal-title').textContent = dateLabel;
+    Utils.setText('#day-modal-title', dateLabel);
 
     const hoursInput = Utils.$('#day-hours');
     const commentInput = Utils.$('#day-comment');
-    if (document.activeElement !== hoursInput) {
+    if (hoursInput && document.activeElement !== hoursInput) {
       hoursInput.value = dayData.hours || '';
     }
-    if (document.activeElement !== commentInput) {
+    if (commentInput && document.activeElement !== commentInput) {
       commentInput.value = dayData.comment || '';
     }
 
-    Utils.$('#day-summary-salary').textContent = Utils.formatMoney(dayResult.daySalary);
-    Utils.$('#day-summary-sales').textContent = Utils.formatMoney(dayResult.salesTotal);
-    Utils.$('#day-summary-premium').textContent = Utils.formatMoney(dayResult.premium);
-    Utils.$('#day-summary-total').textContent = dayResult.hasData
-      ? Utils.formatMoney(dayResult.total)
-      : 'Нет данных';
+    Utils.setText('#day-summary-salary', Utils.formatMoney(dayResult.daySalary));
+    Utils.setText('#day-summary-sales', Utils.formatMoney(dayResult.salesTotal));
+    Utils.setText('#day-summary-premium', Utils.formatMoney(dayResult.premium));
+    Utils.setText(
+      '#day-summary-total',
+      dayResult.hasData ? Utils.formatMoney(dayResult.total) : 'Нет данных'
+    );
 
     // Не пересоздаём строки, если пользователь печатает в поле суммы/количества —
     // иначе фокус теряется после каждой цифры.
     if (this.isEditingDayLineField()) {
       this.updateLineRowsMeta();
     } else {
-      this.renderLinesList(BLOCKS.SALES, '#sales-lines', DataService.getSalesIndicators());
+      this.renderLinesList(BLOCKS.SALES, '#sales-lines', DataService.getEconomicIndicators());
       this.renderLinesList(BLOCKS.OPERATOR, '#operator-lines', DataService.getOperatorIndicators());
     }
   }
@@ -1216,7 +1272,7 @@ class UIController {
       const item = day.items.find((i) => i.id === itemId);
       if (!item) return;
 
-      const calc = SalaryCalculator.calculateLine(item);
+      const calc = SalaryCalculator.calculateLine(item, this.getActiveCategoryKey());
       const rateEl = row.querySelector('[data-role="rate"]');
       const accrualEl = row.querySelector('[data-role="accrual"]');
       const labelEl = row.querySelector('[data-role="value-label"]');
@@ -1252,7 +1308,7 @@ class UIController {
     }
 
     items.forEach((item) => {
-      const calc = SalaryCalculator.calculateLine(item);
+      const calc = SalaryCalculator.calculateLine(item, this.getActiveCategoryKey());
       const indicator = DataService.getIndicator(block, item.indicatorId);
       const valueLabel = indicator && indicator.rateType === RATE_TYPES.FIXED
         ? 'Количество'

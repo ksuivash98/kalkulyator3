@@ -12,10 +12,12 @@
 class SalaryCalculator {
   /**
    * Рассчитывает начисление по одной строке показателя.
+   * Ставка берётся из таблицы категории сотрудника.
    * @param {DayLineItem|Object} item
+   * @param {string} categoryKey
    * @returns {{accrual: number, rate: number, rateType: string, indicatorName: string, salesAmount: number}}
    */
-  static calculateLine(item) {
+  static calculateLine(item, categoryKey) {
     const indicator = DataService.getIndicator(item.block, item.indicatorId);
     if (!indicator) {
       return {
@@ -28,15 +30,16 @@ class SalaryCalculator {
     }
 
     const value = Utils.toNumber(item.value, 0);
+    const rate = DataService.getIndicatorRateByCategory(indicator, categoryKey);
     let accrual = 0;
     let salesAmount = 0;
 
     if (indicator.rateType === RATE_TYPES.FIXED) {
       // Начисление = количество × ставка
-      accrual = value * indicator.rate;
+      accrual = value * rate;
     } else {
       // Начисление = сумма × процент
-      accrual = value * indicator.rate;
+      accrual = value * rate;
       if (item.block === BLOCKS.SALES) {
         salesAmount = value;
       }
@@ -44,7 +47,7 @@ class SalaryCalculator {
 
     return {
       accrual: Utils.roundMoney(accrual),
-      rate: indicator.rate,
+      rate,
       rateType: indicator.rateType,
       indicatorName: indicator.name,
       salesAmount: Utils.roundMoney(salesAmount)
@@ -89,9 +92,10 @@ class SalaryCalculator {
    * Полный расчёт одного дня.
    * @param {DayData} day
    * @param {number} hourlyRate
+   * @param {string} categoryKey
    * @returns {Object}
    */
-  static calculateDay(day, hourlyRate) {
+  static calculateDay(day, hourlyRate, categoryKey) {
     const hours = Utils.toNumber(day.hours, 0);
     const daySalary = SalaryCalculator.calcSalary(hours, hourlyRate);
 
@@ -103,7 +107,7 @@ class SalaryCalculator {
     const indicatorStats = {};
 
     const lines = day.items.map((item) => {
-      const calc = SalaryCalculator.calculateLine(item);
+      const calc = SalaryCalculator.calculateLine(item, categoryKey);
       if (item.block === BLOCKS.SALES) {
         salesTotal += calc.salesAmount;
         salesPremium += calc.accrual;
@@ -169,6 +173,8 @@ class SalaryCalculator {
   static calculatePeriod(period) {
     const hourlyRate = DataService.getHourlyRate(period.cityId);
     const city = DataService.getCity(period.cityId);
+    const categoryKey = city ? city.categoryKey : EMPLOYEE_CATEGORIES.STANDARD;
+    const categoryLabel = DataService.getCategoryLabel(categoryKey);
     const workDays = Utils.toNumber(period.workDays, 0);
     const workHours = Utils.toNumber(period.workHours, 0);
     const salary = SalaryCalculator.calcSalary(workHours, hourlyRate);
@@ -188,7 +194,7 @@ class SalaryCalculator {
 
     for (let d = 1; d <= period.daysInMonth; d += 1) {
       const day = period.getDay(d);
-      const dayResult = SalaryCalculator.calculateDay(day, hourlyRate);
+      const dayResult = SalaryCalculator.calculateDay(day, hourlyRate, categoryKey);
       days.push(dayResult);
 
       if (dayResult.hasData) {
@@ -301,7 +307,8 @@ class SalaryCalculator {
       title: period.title,
       cityId: period.cityId,
       cityName: city ? city.name : '',
-      category: city ? city.category : CITY_CATEGORY_STANDARD,
+      categoryKey,
+      category: categoryLabel,
       hourlyRate,
       workDays,
       workHours,

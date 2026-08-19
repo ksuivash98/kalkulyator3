@@ -212,7 +212,7 @@ class ExportService {
       filename = `salary_backup_${new Date().toISOString().slice(0, 10)}.json`;
     } else if (mode === 'employee') {
       payload = {
-        version: 1,
+        version: 2,
         type: 'employee',
         exportedAt: new Date().toISOString(),
         employee: employee.toJSON()
@@ -220,7 +220,7 @@ class ExportService {
       filename = `${ExportService.sanitizeFileName(employee.name)}.json`;
     } else {
       payload = {
-        version: 1,
+        version: 2,
         type: 'period',
         exportedAt: new Date().toISOString(),
         employeeId: employee.id,
@@ -385,13 +385,13 @@ class ExportService {
     push([]);
     push(['Общая сумма продаж', calculation.totalSales]);
     push(['Премия до сезонности', calculation.totalPremium]);
-    push(['Коэффициент сезонности', calculation.seasonalityLabel]);
+    push(['Сезонность', calculation.seasonalityLabel]);
     push(['Премия после сезонности', calculation.premiumAfterSeasonality]);
     push(['Мультипликатор KPI', calculation.kpi.labelText]);
     calculation.kpi.items.forEach((item) => {
       push([`KPI: ${item.fullName}`, item.labelText]);
     });
-    push(['Премия после KPI', calculation.finalPremium]);
+    push(['Финальный бонус', calculation.finalPremium]);
     push(['Потери из-за KPI', calculation.kpi.analytics.lossesTotal]);
     push(['Доход от ближайших целей', calculation.kpi.analytics.nextGoalsGain]);
     push(['Максимально возможная премия', calculation.kpi.analytics.maxPremium]);
@@ -576,10 +576,10 @@ class ExportService {
     <div class="card"><div class="label">Оклад</div><div class="value">${Utils.formatMoney(calculation.salary)}</div></div>
     <div class="card"><div class="label">Продажи</div><div class="value">${Utils.formatMoney(calculation.totalSales)}</div></div>
     <div class="card"><div class="label">Премия до сезонности</div><div class="value">${Utils.formatMoney(calculation.totalPremium)}</div></div>
-    <div class="card"><div class="label">Коэффициент сезонности</div><div class="value">${Utils.escapeHtml(calculation.seasonalityLabel)}</div></div>
+    <div class="card"><div class="label">Сезонность</div><div class="value">${Utils.escapeHtml(calculation.seasonalityLabel)}</div></div>
     <div class="card"><div class="label">Премия после сезонности</div><div class="value">${Utils.formatMoney(calculation.premiumAfterSeasonality)}</div></div>
     <div class="card"><div class="label">Мультипликатор KPI</div><div class="value">${Utils.escapeHtml(calculation.kpi.labelText)}</div></div>
-    <div class="card"><div class="label">Премия после KPI</div><div class="value">${Utils.formatMoney(calculation.finalPremium)}</div></div>
+    <div class="card"><div class="label">Финальный бонус</div><div class="value">${Utils.formatMoney(calculation.finalPremium)}</div></div>
     <div class="card"><div class="label">Итого к выплате</div><div class="value">${Utils.formatMoney(calculation.payout)}</div></div>
   </div>
 

@@ -26,8 +26,22 @@ const MAX_BACKUPS = 10;
 /** Имя сотрудника по умолчанию при первом запуске */
 const DEFAULT_EMPLOYEE_NAME = 'Новый сотрудник';
 
-/** Категория городов по умолчанию */
-const CITY_CATEGORY_STANDARD = 'Стандарт';
+/** Ключи категорий сотрудников */
+const EMPLOYEE_CATEGORIES = Object.freeze({
+  STANDARD: 'standard',
+  DOTA1: 'dota1',
+  DOTA2: 'dota2'
+});
+
+/** Человекочитаемые названия категорий */
+const EMPLOYEE_CATEGORY_LABELS = Object.freeze({
+  [EMPLOYEE_CATEGORIES.STANDARD]: 'Стандарт',
+  [EMPLOYEE_CATEGORIES.DOTA1]: 'Дота 1',
+  [EMPLOYEE_CATEGORIES.DOTA2]: 'Дота 2'
+});
+
+/** Категория города по умолчанию */
+const CITY_CATEGORY_STANDARD = EMPLOYEE_CATEGORIES.STANDARD;
 
 /** Типы начисления */
 const RATE_TYPES = Object.freeze({
@@ -241,26 +255,38 @@ const DEFAULT_KPI_VALUES = Object.freeze({
 
 /**
  * Справочник городов салонов связи.
- * @type {Readonly<Object<string, {id: string, name: string, category: string, hourlyRate: number}>>}
+ * categoryKey — ключ категории для выбора ставок показателей.
+ * categoryLabel — русское название для UI.
+ * @type {Readonly<Object<string, {id: string, name: string, categoryKey: string, categoryLabel: string, hourlyRate: number}>>}
  */
 const CITIES = Object.freeze({
   berezniki: Object.freeze({
     id: 'berezniki',
     name: 'Березники',
-    category: CITY_CATEGORY_STANDARD,
+    categoryKey: EMPLOYEE_CATEGORIES.STANDARD,
+    categoryLabel: EMPLOYEE_CATEGORY_LABELS[EMPLOYEE_CATEGORIES.STANDARD],
     hourlyRate: 100
   }),
   solikamsk: Object.freeze({
     id: 'solikamsk',
     name: 'Соликамск',
-    category: CITY_CATEGORY_STANDARD,
+    categoryKey: EMPLOYEE_CATEGORIES.STANDARD,
+    categoryLabel: EMPLOYEE_CATEGORY_LABELS[EMPLOYEE_CATEGORIES.STANDARD],
     hourlyRate: 110
   }),
   kungur: Object.freeze({
     id: 'kungur',
     name: 'Кунгур',
-    category: CITY_CATEGORY_STANDARD,
+    categoryKey: EMPLOYEE_CATEGORIES.STANDARD,
+    categoryLabel: EMPLOYEE_CATEGORY_LABELS[EMPLOYEE_CATEGORIES.STANDARD],
     hourlyRate: 100
+  }),
+  perm: Object.freeze({
+    id: 'perm',
+    name: 'Пермь',
+    categoryKey: EMPLOYEE_CATEGORIES.DOTA1,
+    categoryLabel: EMPLOYEE_CATEGORY_LABELS[EMPLOYEE_CATEGORIES.DOTA1],
+    hourlyRate: 130
   })
 });
 
@@ -272,100 +298,116 @@ const DEFAULT_CITY_ID = 'berezniki';
  * ========================================================================== */
 
 /**
- * Показатели продаж.
- * rate — доля (например 0.005 = 0.5%).
- * @type {ReadonlyArray<{id: string, name: string, rate: number, rateType: string}>}
+ * Показатели экономического блока.
+ * rates хранят ставки сразу для категорий standard / dota1 / dota2.
+ * Все значения percent хранятся как доли: 0.005 = 0,5%.
+ * @type {ReadonlyArray<{id: string, name: string, block: string, rateType: string, rates: Object}>}
  */
-const SALES_INDICATORS = Object.freeze([
+const economicIndicators = Object.freeze([
   Object.freeze({
     id: 'smart_red_apple_obmen',
-    name: 'Смартфоны Red, Apple и «Обмен минут»',
-    rate: 0.005,
-    rateType: RATE_TYPES.PERCENT
+    name: 'Смартфоны категории Red, Apple и по акции «Обмен минут»',
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.005, dota1: 0.005, dota2: 0.005 })
   }),
   Object.freeze({
     id: 'smart_standart_tablet',
-    name: 'Смартфоны Standart и планшеты',
-    rate: 0.01,
-    rateType: RATE_TYPES.PERCENT
+    name: 'Смартфоны категории Standart и планшеты',
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.01, dota1: 0.01, dota2: 0.01 })
   }),
   Object.freeze({
     id: 'smart_green',
     name: 'Смартфоны категории Green',
-    rate: 0.02,
-    rateType: RATE_TYPES.PERCENT
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.02, dota1: 0.025, dota2: 0.03 })
   }),
   Object.freeze({
     id: 'smart_sellout_dead',
-    name: 'Смартфоны Sell Out / Dead',
-    rate: 0.03,
-    rateType: RATE_TYPES.PERCENT
+    name: 'Смартфоны категории Sell Out / Dead',
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.03, dota1: 0.035, dota2: 0.04 })
   }),
   Object.freeze({
     id: 'feature_phones',
     name: 'Кнопочные телефоны',
-    rate: 0.05,
-    rateType: RATE_TYPES.PERCENT
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.05, dota1: 0.075, dota2: 0.10 })
   }),
   Object.freeze({
     id: 'trade_in',
     name: 'Трейд-ин',
-    rate: 0.04,
-    rateType: RATE_TYPES.PERCENT
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.04, dota1: 0.05, dota2: 0.06 })
   }),
   Object.freeze({
     id: 'buyout',
     name: 'Выкуп',
-    rate: 0.015,
-    rateType: RATE_TYPES.PERCENT
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.015, dota1: 0.015, dota2: 0.015 })
   }),
   Object.freeze({
     id: 'accessories',
     name: 'Аксессуары и носимая электроника',
-    rate: 0.10,
-    rateType: RATE_TYPES.PERCENT
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.10, dota1: 0.125, dota2: 0.15 })
   }),
   Object.freeze({
     id: 'wearable_premium',
     name: 'Носимая электроника Premium',
-    rate: 0.04,
-    rateType: RATE_TYPES.PERCENT
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.04, dota1: 0.05, dota2: 0.06 })
   }),
   Object.freeze({
     id: 'services_settings',
-    name: 'Услуги / Настройки',
-    rate: 0.20,
-    rateType: RATE_TYPES.PERCENT
+    name: 'Услуги | Настройки',
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.20, dota1: 0.25, dota2: 0.30 })
   }),
   Object.freeze({
     id: 'kaspersky',
-    name: 'Подписка Kaspersky',
-    rate: 0.30,
-    rateType: RATE_TYPES.PERCENT
+    name: 'Подписка на Антивирус Kaspersky 300 руб',
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.30, dota1: 0.35, dota2: 0.40 })
   }),
   Object.freeze({
     id: 'insurance_mmb',
     name: 'Страхование ММБ Ренессанс без Комбо',
-    rate: 0.12,
-    rateType: RATE_TYPES.PERCENT
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.12, dota1: 0.15, dota2: 0.18 })
   }),
   Object.freeze({
     id: 'insurance_other',
     name: 'Страхование остальное / КСЖ',
-    rate: 0.08,
-    rateType: RATE_TYPES.PERCENT
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.08, dota1: 0.10, dota2: 0.12 })
   }),
   Object.freeze({
     id: 'repair_accept',
     name: 'Прием в ремонт',
-    rate: 0.08,
-    rateType: RATE_TYPES.PERCENT
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.08, dota1: 0.10, dota2: 0.12 })
   }),
   Object.freeze({
     id: 'stoloto_tickets',
-    name: 'Потерянные билеты Столото',
-    rate: 0.04,
-    rateType: RATE_TYPES.PERCENT
+    name: 'Лотерейные билеты «Столото»',
+    block: BLOCKS.SALES,
+    rateType: RATE_TYPES.PERCENT,
+    rates: Object.freeze({ standard: 0.04, dota1: 0.05, dota2: 0.06 })
   })
 ]);
 
@@ -374,144 +416,34 @@ const SALES_INDICATORS = Object.freeze([
  * ========================================================================== */
 
 /**
- * Операторские показатели.
- * Для fixed: rate — сумма в рублях за единицу.
- * Для percent: rate — доля от введённой суммы.
- * @type {ReadonlyArray<{id: string, name: string, rate: number, rateType: string}>}
+ * Показатели операторского блока.
+ * Для fixed ставка выражена в рублях за 1 операцию.
+ * Для percent ставка хранится как доля: 0.08 = 8%.
+ * @type {ReadonlyArray<{id: string, name: string, block: string, rateType: string, rates: Object}>}
  */
-const OPERATOR_INDICATORS = Object.freeze([
-  Object.freeze({
-    id: 'extra_sim',
-    name: 'Экстра-Sim',
-    rate: -40,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'extra_sim_overlimit',
-    name: 'Экстра-Sim (при превышении лимита)',
-    rate: -80,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'base_tp',
-    name: 'Базовые ТП',
-    rate: 40,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'bundle_base_tp',
-    name: 'Bundle Базовые ТП',
-    rate: 70,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'high_bundle_tp',
-    name: 'High Bundle ТП',
-    rate: 120,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'high_bundle_plus_tp',
-    name: 'High Bundle + ТП',
-    rate: 180,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'high_bundle_plusplus_tp',
-    name: 'High Bundle ++ ТП',
-    rate: 250,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'premium_tp',
-    name: 'Premium ТП',
-    rate: 350,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'promo_sim_booster',
-    name: 'Промо Sim / Бустер',
-    rate: 40,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'abon_sim_3m',
-    name: 'Абон SIM 3 месяца',
-    rate: 150,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'gold_combo_sim_3m',
-    name: 'Золото / Комбо SIM 3 месяца',
-    rate: 250,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'gold_abon_combo_sim_6m',
-    name: 'Золото / Абон / Комбо SIM 6 месяцев',
-    rate: 350,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'gold_abon_combo_sim_12m',
-    name: 'Золото / Абон / Комбо SIM 12 месяцев',
-    rate: 450,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'legal_entity',
-    name: 'Подключение юрлица',
-    rate: 300,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'mnp',
-    name: 'MNP',
-    rate: 250,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'broadband_tv',
-    name: 'Подключение ШПД / ТВ',
-    rate: 400,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'service_ops',
-    name: 'Сервисные операции Т2 и МТС',
-    rate: 10,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'cs_rtk_t2',
-    name: 'ЦС (оборудование РТК) и подписки Т2',
-    rate: 0.08,
-    rateType: RATE_TYPES.PERCENT
-  }),
-  Object.freeze({
-    id: 'yandex_adapter',
-    name: 'Яндекс Адаптер',
-    rate: 40,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'modem',
-    name: 'Модем',
-    rate: 0,
-    rateType: RATE_TYPES.PERCENT
-  }),
-  Object.freeze({
-    id: 'installment_card',
-    name: 'Карта рассрочки без продажи по КР',
-    rate: 500,
-    rateType: RATE_TYPES.FIXED
-  }),
-  Object.freeze({
-    id: 'financing',
-    name: 'Финансирование',
-    rate: 0.003,
-    rateType: RATE_TYPES.PERCENT
-  })
+const operatorIndicators = Object.freeze([
+  Object.freeze({ id: 'extra_sim', name: 'Экстра-Sim', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: -40, dota1: -40, dota2: -40 }) }),
+  Object.freeze({ id: 'extra_sim_overlimit', name: 'Экстра-Sim (при превышении лимита)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: -80, dota1: -80, dota2: -80 }) }),
+  Object.freeze({ id: 'base_tp', name: 'Базовые ТП', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 40, dota1: 50, dota2: 60 }) }),
+  Object.freeze({ id: 'bundle_base_tp', name: 'Bundle Базовые ТП', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 70, dota1: 90, dota2: 110 }) }),
+  Object.freeze({ id: 'high_bundle_tp', name: 'High Bundle ТП', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 120, dota1: 150, dota2: 180 }) }),
+  Object.freeze({ id: 'high_bundle_plus_tp', name: 'High Bundle + ТП', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 160, dota1: 200, dota2: 240 }) }),
+  Object.freeze({ id: 'high_bundle_plusplus_tp', name: 'High Bundle ++ ТП', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 280, dota1: 350, dota2: 420 }) }),
+  Object.freeze({ id: 'premium_tp', name: 'Premium ТП', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 350, dota1: 450, dota2: 550 }) }),
+  Object.freeze({ id: 'promo_sim_booster', name: 'Промо Sim от оператора / Акция «Бустер»', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 40, dota1: 50, dota2: 60 }) }),
+  Object.freeze({ id: 'abon_sim_3m', name: 'Абон SIM 3 мес. (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 150, dota1: 200, dota2: 250 }) }),
+  Object.freeze({ id: 'gold_combo_sim_3m', name: 'Золото / Комбо SIM 3 мес. (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 250, dota1: 300, dota2: 350 }) }),
+  Object.freeze({ id: 'gold_abon_combo_sim_6m', name: 'Золото / Абон / Комбо SIM 6 мес. (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 350, dota1: 450, dota2: 550 }) }),
+  Object.freeze({ id: 'gold_abon_combo_sim_12m', name: 'Золото / Абон / Комбо SIM 12 мес. (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 450, dota1: 550, dota2: 650 }) }),
+  Object.freeze({ id: 'legal_entity', name: 'Подключение юр.лица (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 300, dota1: 350, dota2: 400 }) }),
+  Object.freeze({ id: 'mnp', name: 'MNP (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 250, dota1: 300, dota2: 350 }) }),
+  Object.freeze({ id: 'broadband_tv', name: 'Подключение 1 услуги ШПД или ТВ', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 400, dota1: 500, dota2: 600 }) }),
+  Object.freeze({ id: 'service_ops', name: 'Сервисные операции Т2 и МТС', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 10, dota1: 12.5, dota2: 15 }) }),
+  Object.freeze({ id: 'yandex_adapter', name: 'Яндекс адаптер', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 40, dota1: 50, dota2: 60 }) }),
+  Object.freeze({ id: 'installment_card', name: 'Карта рассрочки без продажи по КР', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 500, dota1: 500, dota2: 500 }) }),
+  Object.freeze({ id: 'cs_rtk_t2', name: 'ЦС (оборудование РТК) и подписки от Т2', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.PERCENT, rates: Object.freeze({ standard: 0.08, dota1: 0.10, dota2: 0.12 }) }),
+  Object.freeze({ id: 'modem', name: 'Модем', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.PERCENT, rates: Object.freeze({ standard: 0, dota1: 0, dota2: 0 }) }),
+  Object.freeze({ id: 'financing', name: 'Финансирование (% от суммы перевода)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.PERCENT, rates: Object.freeze({ standard: 0.003, dota1: 0.003, dota2: 0.003 }) })
 ]);
 
 /* ============================================================================
@@ -532,12 +464,12 @@ const CALENDAR_THRESHOLDS = Object.freeze({
 
 /**
  * Сервис справочных данных приложения.
- * Предоставляет города, показатели продаж и операторского блока.
+ * Предоставляет города, категории, показатели экономического и операторского блока.
  */
 class DataService {
   /**
    * Возвращает список городов.
-   * @returns {Array<{id: string, name: string, category: string, hourlyRate: number}>}
+   * @returns {Array<{id: string, name: string, categoryKey: string, categoryLabel: string, hourlyRate: number}>}
    */
   static getCities() {
     return Object.values(CITIES);
@@ -546,7 +478,7 @@ class DataService {
   /**
    * Возвращает город по идентификатору.
    * @param {string} cityId
-   * @returns {{id: string, name: string, category: string, hourlyRate: number}|null}
+   * @returns {{id: string, name: string, categoryKey: string, categoryLabel: string, hourlyRate: number}|null}
    */
   static getCity(cityId) {
     return CITIES[cityId] || null;
@@ -563,63 +495,114 @@ class DataService {
   }
 
   /**
-   * Возвращает категорию города.
+   * Возвращает ключ категории города.
+   * @param {string} cityId
+   * @returns {string}
+   */
+  static getCityCategoryKey(cityId) {
+    const city = DataService.getCity(cityId);
+    return city ? city.categoryKey : CITY_CATEGORY_STANDARD;
+  }
+
+  /**
+   * Возвращает название категории города для UI.
    * @param {string} cityId
    * @returns {string}
    */
   static getCityCategory(cityId) {
     const city = DataService.getCity(cityId);
-    return city ? city.category : CITY_CATEGORY_STANDARD;
+    return city ? city.categoryLabel : EMPLOYEE_CATEGORY_LABELS[CITY_CATEGORY_STANDARD];
   }
 
   /**
-   * Возвращает все показатели продаж.
-   * @returns {ReadonlyArray<{id: string, name: string, rate: number, rateType: string}>}
+   * Возвращает человекочитаемое имя категории.
+   * @param {string} categoryKey
+   * @returns {string}
+   */
+  static getCategoryLabel(categoryKey) {
+    return EMPLOYEE_CATEGORY_LABELS[categoryKey] || EMPLOYEE_CATEGORY_LABELS[EMPLOYEE_CATEGORIES.STANDARD];
+  }
+
+  /**
+   * Возвращает все показатели экономического блока.
+   * @returns {ReadonlyArray<{id: string, name: string, rates: Object, rateType: string}>}
+   */
+  static getEconomicIndicators() {
+    return economicIndicators;
+  }
+
+  /**
+   * Совместимый alias для старого UI.
+   * @returns {ReadonlyArray<{id: string, name: string, rates: Object, rateType: string}>}
    */
   static getSalesIndicators() {
-    return SALES_INDICATORS;
+    return DataService.getEconomicIndicators();
   }
 
   /**
-   * Возвращает показатель продаж по id.
+   * Возвращает показатель экономического блока по id.
    * @param {string} indicatorId
-   * @returns {{id: string, name: string, rate: number, rateType: string}|null}
+   * @returns {{id: string, name: string, rates: Object, rateType: string}|null}
+   */
+  static getEconomicIndicator(indicatorId) {
+    return economicIndicators.find((item) => item.id === indicatorId) || null;
+  }
+
+  /**
+   * Совместимый alias для старого UI.
+   * @param {string} indicatorId
+   * @returns {{id: string, name: string, rates: Object, rateType: string}|null}
    */
   static getSalesIndicator(indicatorId) {
-    return SALES_INDICATORS.find((item) => item.id === indicatorId) || null;
+    return DataService.getEconomicIndicator(indicatorId);
   }
 
   /**
    * Возвращает все операторские показатели.
-   * @returns {ReadonlyArray<{id: string, name: string, rate: number, rateType: string}>}
+   * @returns {ReadonlyArray<{id: string, name: string, rates: Object, rateType: string}>}
    */
   static getOperatorIndicators() {
-    return OPERATOR_INDICATORS;
+    return operatorIndicators;
   }
 
   /**
    * Возвращает операторский показатель по id.
    * @param {string} indicatorId
-   * @returns {{id: string, name: string, rate: number, rateType: string}|null}
+   * @returns {{id: string, name: string, rates: Object, rateType: string}|null}
    */
   static getOperatorIndicator(indicatorId) {
-    return OPERATOR_INDICATORS.find((item) => item.id === indicatorId) || null;
+    return operatorIndicators.find((item) => item.id === indicatorId) || null;
   }
 
   /**
    * Возвращает показатель по блоку и id.
    * @param {string} block - 'sales' | 'operator'
    * @param {string} indicatorId
-   * @returns {{id: string, name: string, rate: number, rateType: string}|null}
+   * @returns {{id: string, name: string, rates: Object, rateType: string}|null}
    */
   static getIndicator(block, indicatorId) {
     if (block === BLOCKS.SALES) {
-      return DataService.getSalesIndicator(indicatorId);
+      return DataService.getEconomicIndicator(indicatorId);
     }
     if (block === BLOCKS.OPERATOR) {
       return DataService.getOperatorIndicator(indicatorId);
     }
     return null;
+  }
+
+  /**
+   * Возвращает ставку показателя по категории.
+   * @param {Object|null} indicator
+   * @param {string} categoryKey
+   * @returns {number}
+   */
+  static getIndicatorRateByCategory(indicator, categoryKey) {
+    if (!indicator || !indicator.rates) return 0;
+    const normalized = categoryKey || EMPLOYEE_CATEGORIES.STANDARD;
+    if (Object.prototype.hasOwnProperty.call(indicator.rates, normalized)) {
+      return Utils.toNumber(indicator.rates[normalized], 0);
+    }
+    return Utils.toNumber(indicator.rates[EMPLOYEE_CATEGORIES.STANDARD], 0);
   }
 
   /**

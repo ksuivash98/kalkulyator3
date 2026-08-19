@@ -161,7 +161,7 @@ class EmployeePeriod {
     /** @type {number} */
     this.month = month;
     /** @type {string} */
-    this.cityId = data.cityId || DEFAULT_CITY_ID;
+    this.cityId = EmployeePeriod.normalizeCityId(data.cityId);
     /** @type {number} */
     this.workDays = Utils.toNumber(data.workDays, 0);
     /** @type {number} */
@@ -208,6 +208,30 @@ class EmployeePeriod {
   }
 
   /**
+   * Нормализация cityId с миграцией старых/битых значений.
+   * @param {string} cityId
+   * @returns {string}
+   */
+  static normalizeCityId(cityId) {
+    const normalized = String(cityId || '').trim().toLowerCase();
+    if (DataService.getCity(normalized)) {
+      return normalized;
+    }
+    const aliases = {
+      'березники': 'berezniki',
+      'berezniki': 'berezniki',
+      'соликамск': 'solikamsk',
+      'solikamsk': 'solikamsk',
+      'кунгур': 'kungur',
+      'kungur': 'kungur',
+      'пермь': 'perm',
+      'perm': 'perm'
+    };
+    const mapped = aliases[normalized];
+    return DataService.getCity(mapped) ? mapped : DEFAULT_CITY_ID;
+  }
+
+  /**
    * Ключ периода YYYY-MM.
    * @returns {string}
    */
@@ -229,6 +253,30 @@ class EmployeePeriod {
    */
   get daysInMonth() {
     return DataService.getDaysInMonth(this.year, this.month);
+  }
+
+  /**
+   * Ключ категории периода, вычисляемый по городу.
+   * @returns {string}
+   */
+  get categoryKey() {
+    return DataService.getCityCategoryKey(this.cityId);
+  }
+
+  /**
+   * Название категории периода для UI.
+   * @returns {string}
+   */
+  get categoryLabel() {
+    return DataService.getCityCategory(this.cityId);
+  }
+
+  /**
+   * Почасовая ставка периода, вычисляемая по городу.
+   * @returns {number}
+   */
+  get hourlyRate() {
+    return DataService.getHourlyRate(this.cityId);
   }
 
   /**

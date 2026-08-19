@@ -305,6 +305,21 @@ class Utils {
   }
 
   /**
+   * Безопасная установка textContent (не падает, если элемента нет).
+   * @param {string} selector
+   * @param {string|number} text
+   * @param {ParentNode} [root=document]
+   * @returns {Element|null}
+   */
+  static setText(selector, text, root = document) {
+    const el = Utils.$(selector, root);
+    if (el) {
+      el.textContent = String(text);
+    }
+    return el;
+  }
+
+  /**
    * querySelectorAll как массив.
    * @param {string} selector
    * @param {ParentNode} [root=document]
