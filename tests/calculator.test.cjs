@@ -32,14 +32,20 @@ for (const month of [1,11]) {
 }
 assert.equal(DayLineItem.fromJSON(line('smart_green',10,BLOCKS.SALES,'cash').toJSON()).paymentMethod,'cash');
 const plannedPeriod = new EmployeePeriod(2026, 11);
-plannedPeriod.salaryGoal = {desired:60000,sales:100000,indicatorId:'accessories',paymentMethod:'qr_credit'};
+plannedPeriod.salaryGoal = {desired:60000,lines:[line('accessories',100000,BLOCKS.SALES),line('base_tp',10),line('recommend_manager',1,BLOCKS.ADMIN)]};
 const estimate = SalaryCalculator.calculateSalaryGoal(plannedPeriod, {payout:30000,seasonalityCoefficient:0.9,kpi:{factor:1}});
-assert.equal(estimate.bonus,9000);
-assert.equal(estimate.projected,39000);
-assert.equal(estimate.requiredSales,333334);
-assert.equal(estimate.remaining,21000);
+assert.equal(estimate.bonus,14360);
+assert.equal(estimate.projected,44360);
+assert.equal(estimate.remaining,15640);
+assert.equal(estimate.lines[1].bonus,360);
+assert.equal(estimate.lines[2].bonus,5000);
 plannedPeriod.salaryGoal.desired=20000;
-assert.equal(SalaryCalculator.calculateSalaryGoal(plannedPeriod,{payout:30000,seasonalityCoefficient:0.9,kpi:{factor:1}}).requiredSales,0);
-assert.equal(EmployeePeriod.fromJSON(plannedPeriod.toJSON()).salaryGoal.sales,100000);
+assert.equal(SalaryCalculator.calculateSalaryGoal(plannedPeriod,{payout:30000,seasonalityCoefficient:0.9,kpi:{factor:1}}).coverage,100);
+assert.equal(EmployeePeriod.fromJSON(plannedPeriod.toJSON()).salaryGoal.lines.length,3);
+const migrated=new EmployeePeriod(2026,11,{salaryGoal:{desired:50000,sales:60000,indicatorId:'smart_green',paymentMethod:'cash'}});
+assert.equal(migrated.salaryGoal.lines[0].value,60000);
+assert.equal(migrated.salaryGoal.lines[0].paymentMethod,'cash');
+plannedPeriod.salaryGoal.lines=[];
+assert.equal(SalaryCalculator.calculateSalaryGoal(plannedPeriod,{payout:30000,seasonalityCoefficient:0.9,kpi:{factor:1}}).bonus,0);
 console.log('Salary and salary goal rules: all assertions passed');
 `, context);

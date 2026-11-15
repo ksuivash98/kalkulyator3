@@ -1575,3 +1575,10 @@ html[data-theme="dark"] .legend--top {
     transition: none !important;
   }
 }
+
+/* Multiple indicators in the salary plan. */
+.goal-plan-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; }
+.goal-plan-row > * { min-width: 0; }
+.goal-plan-row select, .goal-plan-row input { width: 100%; }
+#goal-add-line { margin: 12px 0; }
+@media (max-width: 900px) { .goal-plan-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .goal-plan-row > :first-child { grid-column: 1 / -1; } }

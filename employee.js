@@ -168,11 +168,11 @@ class EmployeePeriod {
     this.workDays = Utils.toNumber(data.workDays, 0);
     /** @type {number} */
     this.workHours = Utils.toNumber(data.workHours, 0);
+    const savedGoal = data.salaryGoal || {};
+    const goalLines = Array.isArray(savedGoal.lines) ? savedGoal.lines : [{ block: BLOCKS.SALES, indicatorId: savedGoal.indicatorId || 'accessories', value: savedGoal.sales || 0, paymentMethod: savedGoal.paymentMethod }];
     this.salaryGoal = {
-      desired: Math.max(0, Utils.toNumber(data.salaryGoal?.desired, 0)),
-      sales: Math.max(0, Utils.toNumber(data.salaryGoal?.sales, 0)),
-      indicatorId: data.salaryGoal?.indicatorId || 'accessories',
-      paymentMethod: ['card', 'cash', 'qr_credit'].includes(data.salaryGoal?.paymentMethod) ? data.salaryGoal.paymentMethod : 'qr_credit'
+      desired: Math.max(0, Utils.toNumber(savedGoal.desired, 0)),
+      lines: goalLines.map(line => new DayLineItem({ ...line, value: Math.max(0, Utils.toNumber(line.value, 0)) }).toJSON())
     };
     /** @type {Object} */
     this.kpi = EmployeePeriod.normalizeKpi(data.kpi);
@@ -329,7 +329,7 @@ class EmployeePeriod {
       cityId: this.cityId,
       workDays: this.workDays,
       workHours: this.workHours,
-      salaryGoal: { ...this.salaryGoal },
+      salaryGoal: { desired: this.salaryGoal.desired, lines: this.salaryGoal.lines.map(line => ({ ...line })) },
       kpi: { ...this.kpi },
       days
     };

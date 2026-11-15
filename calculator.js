@@ -179,17 +179,18 @@ class SalaryCalculator {
    */
   static calculateSalaryGoal(period, calculation) {
     const goal = period.salaryGoal;
-    const indicator = DataService.getEconomicIndicator(goal.indicatorId);
     const category = DataService.getCityCategoryKey(period.cityId);
-    const eligible = indicator && indicator.rateType === RATE_TYPES.PERCENT;
-    const baseRate = eligible ? SalaryCalculator.calculateLine({ block: BLOCKS.SALES, indicatorId: indicator.id, value: 1000000, paymentMethod: goal.paymentMethod }, category, period).accrual / 1000000 : 0;
-    const effectiveRate = baseRate * calculation.seasonalityCoefficient * calculation.kpi.factor;
+    const lines = goal.lines.map(item => {
+      const base = SalaryCalculator.calculateLine(item, category, period);
+      const factor = item.block === BLOCKS.ADMIN ? 1 : calculation.seasonalityCoefficient * calculation.kpi.factor;
+      return { ...item, bonus: Utils.roundMoney(base.accrual * factor) };
+    });
     const gap = Math.max(0, Utils.roundMoney(goal.desired - calculation.payout));
-    const bonus = Utils.roundMoney(goal.sales * effectiveRate);
+    const bonus = Utils.roundMoney(lines.reduce((sum, line) => sum + line.bonus, 0));
     const projected = Utils.roundMoney(calculation.payout + bonus);
     return {
-      effectiveRate, gap, bonus, projected,
-      requiredSales: gap === 0 ? 0 : effectiveRate > 0 ? Math.ceil(gap / effectiveRate) : null,
+      lines, gap, bonus, projected,
+      coverage: gap === 0 ? 100 : Math.max(0, Math.min(100, bonus / gap * 100)),
       remaining: Math.max(0, Utils.roundMoney(goal.desired - projected))
     };
   }

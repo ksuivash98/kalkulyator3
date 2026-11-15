@@ -245,16 +245,16 @@ class UIController {
     this.bindEvent('#work-days', 'input', () => this.recalculateAndRefresh());
     this.bindEvent('#work-hours', 'input', () => this.recalculateAndRefresh());
 
-    const goalPanel = Utils.$('#salary-goal-panel');
-    goalPanel?.addEventListener('input', () => {
+    this.bindEvent('#goal-desired', 'input', () => {
       if (!this.activePeriod) return;
-      this.activePeriod.salaryGoal = {
-        desired: Math.max(0, Utils.toNumber(Utils.$('#goal-desired').value, 0)),
-        sales: Math.max(0, Utils.toNumber(Utils.$('#goal-sales').value, 0)),
-        indicatorId: Utils.$('#goal-indicator').value,
-        paymentMethod: Utils.$('#goal-payment').value
-      };
+      this.activePeriod.salaryGoal.desired = Math.max(0, Utils.toNumber(Utils.$('#goal-desired').value, 0));
       this.renderSalaryGoal();
+      this.autoSave();
+    });
+    this.bindEvent('#goal-add-line', 'click', () => {
+      if (!this.activePeriod) return;
+      this.activePeriod.salaryGoal.lines.push(new DayLineItem({ block: BLOCKS.SALES, indicatorId: 'accessories' }).toJSON());
+      this.renderSalaryGoal(true);
       this.autoSave();
     });
 
@@ -1063,25 +1063,55 @@ class UIController {
     }
   }
 
-  renderSalaryGoal() {
+  renderSalaryGoal(force = false) {
     if (!this.activePeriod || !this.calculation) return;
     const goal = this.activePeriod.salaryGoal;
-    const select = Utils.$('#goal-indicator');
-    if (!select.options.length) {
-      DataService.getEconomicIndicators().filter(item => item.rateType === RATE_TYPES.PERCENT).forEach(item => select.add(new Option(item.name, item.id)));
-    }
-    const fields = { '#goal-desired': goal.desired || '', '#goal-sales': goal.sales || '', '#goal-indicator': goal.indicatorId, '#goal-payment': goal.paymentMethod };
-    Object.entries(fields).forEach(([id, value]) => {
-      const el = Utils.$(id);
-      if (document.activeElement !== el) el.value = value;
-    });
+    const desired = Utils.$('#goal-desired');
+    if (document.activeElement !== desired) desired.value = goal.desired || '';
     const estimate = SalaryCalculator.calculateSalaryGoal(this.activePeriod, this.calculation);
+    const container = Utils.$('#goal-lines');
+    if (force || !container.contains(document.activeElement)) {
+      container.innerHTML = '';
+      goal.lines.forEach((line, index) => {
+        const row = document.createElement('div');
+        row.className = 'goal-plan-row';
+        const indicator = DataService.getIndicator(line.block, line.indicatorId);
+        row.innerHTML = `<label class="field"><span class="field__label">Показатель</span><select data-goal="indicator"></select></label>
+          <label class="field"><span class="field__label">${indicator?.rateType === RATE_TYPES.FIXED ? 'Количество, шт.' : 'Сумма, ₽'}</span><input data-goal="value" type="number" min="0" step="any" value="${line.value}"/></label>
+          <label class="field"><span class="field__label">Оплата товаров</span><select data-goal="payment"><option value="qr_credit">QR / кредит ×1</option><option value="card">Карта ×0,75</option><option value="cash">Наличные ×1,25</option></select></label>
+          <div><span class="field__label">Примерное начисление</span><strong data-goal="bonus"></strong></div>
+          <button type="button" class="btn btn--ghost" data-goal="remove" aria-label="Удалить показатель из плана">✕</button>`;
+        const select = row.querySelector('[data-goal="indicator"]');
+        [[BLOCKS.SALES, 'Экономический блок', DataService.getEconomicIndicators()], [BLOCKS.OPERATOR, 'Операторский блок', DataService.getOperatorIndicators()], [BLOCKS.ADMIN, 'Административный блок', administrativeIndicators]].forEach(([block, name, indicators]) => {
+          const group = document.createElement('optgroup'); group.label = name;
+          indicators.forEach(item => group.appendChild(new Option(item.name, `${block}:${item.id}`, false, line.block === block && line.indicatorId === item.id)));
+          select.appendChild(group);
+        });
+        select.addEventListener('change', () => {
+          [line.block, line.indicatorId] = select.value.split(':');
+          line.value = 0;
+          this.renderSalaryGoal(true); this.autoSave();
+        });
+        row.querySelector('[data-goal="value"]').addEventListener('input', e => {
+          line.value = Math.max(0, Utils.toNumber(e.target.value, 0));
+          this.renderSalaryGoal(); this.autoSave();
+        });
+        const payment = row.querySelector('[data-goal="payment"]');
+        payment.value = line.paymentMethod;
+        payment.disabled = line.block !== BLOCKS.SALES || !['smart_red_apple_obmen', 'smart_standart_tablet', 'smart_green', 'smart_sellout_dead', 'feature_phones', 'trade_in', 'buyout'].includes(line.indicatorId);
+        payment.addEventListener('change', () => { line.paymentMethod = payment.value; this.renderSalaryGoal(); this.autoSave(); });
+        row.querySelector('[data-goal="remove"]').addEventListener('click', () => { goal.lines.splice(index, 1); this.renderSalaryGoal(true); this.autoSave(); });
+        container.appendChild(row);
+      });
+      if (!goal.lines.length) container.textContent = 'Добавьте товары, услуги или операции в план.';
+    }
+    container.querySelectorAll('[data-goal="bonus"]').forEach((el, index) => { el.textContent = Utils.formatMoney(estimate.lines[index].bonus); });
     Utils.setText('#goal-gap', goal.desired > 0 ? Utils.formatMoney(estimate.gap) : 'Укажите цель');
-    Utils.setText('#goal-required', goal.desired > 0 ? estimate.requiredSales === null ? 'Нет начисления по выбранному показателю' : Utils.formatMoney(estimate.requiredSales) : 'Укажите цель');
+    Utils.setText('#goal-required', goal.desired > 0 ? `${Utils.formatNumber(estimate.coverage)}%` : 'Укажите цель');
     Utils.setText('#goal-bonus', Utils.formatMoney(estimate.bonus));
     Utils.setText('#goal-projected', Utils.formatMoney(estimate.projected));
     Utils.setText('#goal-remaining', goal.desired > 0 ? Utils.formatMoney(estimate.remaining) : 'Укажите цель');
-    Utils.setText('#goal-rate', `Сотрудник получит примерно ${Utils.formatMoney(estimate.effectiveRate * 1000)} с каждых 1 000 ₽ продаж с учётом текущих коэффициентов. Способ оплаты влияет только на товарные показатели от смартфонов до выкупа.`);
+    Utils.setText('#goal-rate', 'Добавьте несколько показателей: суммы продаж для процентных ставок, количество для фиксированных выплат. Начисление показано отдельно для каждой строки.');
   }
 
   renderMonthTotals() {
