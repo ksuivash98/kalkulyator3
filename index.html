@@ -61,6 +61,43 @@
 
     <!-- Основной контент -->
     <section class="content">
+      <!-- Общая аналитика -->
+      <div class="panel" id="kpi-analytics-panel">
+        <div class="panel__head">
+          <h2>Общая аналитика</h2>
+        </div>
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <span>Общая премия до KPI</span>
+            <strong id="analytics-premium-before">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card">
+            <span>Сумма сезонного коэффициента</span>
+            <strong id="analytics-seasonality-effect">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card">
+            <span>Финальная премия</span>
+            <strong id="analytics-final-premium">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card analytics-card--penalty">
+            <span>Потери из-за KPI</span>
+            <strong id="analytics-losses">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card analytics-card--bonus">
+            <span>Доход от ближайших целей</span>
+            <strong id="analytics-next-goals">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card analytics-card--bonus">
+            <span>Максимально возможная премия</span>
+            <strong id="analytics-max-premium">0,00 ₽</strong>
+          </div>
+          <div class="analytics-card analytics-card--gap">
+            <span>До максимальной зарплаты</span>
+            <strong id="analytics-payout-gap">0,00 ₽</strong>
+          </div>
+        </div>
+      </div>
+
       <!-- Период и город -->
       <div class="panel">
         <div class="panel__head">
@@ -232,43 +269,6 @@
           <p class="panel__hint">Анализ по каждому KPI относительно премии после сезонности</p>
         </div>
         <div id="kpi-opportunities" class="opportunity-grid"></div>
-      </div>
-
-      <!-- Общая аналитика -->
-      <div class="panel" id="kpi-analytics-panel">
-        <div class="panel__head">
-          <h2>Общая аналитика</h2>
-        </div>
-        <div class="analytics-grid">
-          <div class="analytics-card">
-            <span>Общая премия до KPI</span>
-            <strong id="analytics-premium-before">0,00 ₽</strong>
-          </div>
-          <div class="analytics-card">
-            <span>Сумма сезонного коэффициента</span>
-            <strong id="analytics-seasonality-effect">0,00 ₽</strong>
-          </div>
-          <div class="analytics-card">
-            <span>Финальная премия</span>
-            <strong id="analytics-final-premium">0,00 ₽</strong>
-          </div>
-          <div class="analytics-card analytics-card--penalty">
-            <span>Потери из-за KPI</span>
-            <strong id="analytics-losses">0,00 ₽</strong>
-          </div>
-          <div class="analytics-card analytics-card--bonus">
-            <span>Доход от ближайших целей</span>
-            <strong id="analytics-next-goals">0,00 ₽</strong>
-          </div>
-          <div class="analytics-card analytics-card--bonus">
-            <span>Максимально возможная премия</span>
-            <strong id="analytics-max-premium">0,00 ₽</strong>
-          </div>
-          <div class="analytics-card analytics-card--gap">
-            <span>До максимальной зарплаты</span>
-            <strong id="analytics-payout-gap">0,00 ₽</strong>
-          </div>
-        </div>
       </div>
 
       <!-- Итоги месяца -->
