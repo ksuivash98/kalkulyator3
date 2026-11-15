@@ -1537,4 +1537,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const app = new UIController();
   app.init();
   window.__salaryApp = app;
+  window.__salaryCloud = new SalaryCloudController(app);
+  window.__salaryCloud.start();
 });

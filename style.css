@@ -1588,3 +1588,7 @@ html[data-theme="dark"] .legend--top {
 .goal-plan-table th, .goal-plan-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border, #dce6e2); }
 #goal-auto details { margin: 16px 0; }
 #goal-auto-status { font-weight: 600; }
+
+#cloud-panel .export-actions { margin-top: 12px; }
+#cloud-panel [hidden] { display: none !important; }
+#cloud-status { overflow-wrap: anywhere; }

@@ -167,10 +167,22 @@ class Utils {
    */
   static debounce(fn, delay) {
     let timer = null;
-    return function debounced(...args) {
-      clearTimeout(timer);
-      timer = setTimeout(() => fn.apply(this, args), delay);
+    let context;
+    let args;
+    const flush = () => {
+      if (timer === null) return;
+      clearTimeout(timer); timer = null;
+      fn.apply(context, args);
     };
+    const debounced = function (...values) {
+      clearTimeout(timer);
+      context = this; args = values;
+      timer = setTimeout(flush, delay);
+    };
+    debounced.cancel = () => { clearTimeout(timer); timer = null; };
+    debounced.flush = flush;
+    debounced.pending = () => timer !== null;
+    return debounced;
   }
 
   /**

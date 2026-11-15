@@ -61,6 +61,26 @@
 
     <!-- Основной контент -->
     <section class="content">
+      <div class="panel" id="cloud-panel">
+        <div class="panel__head"><h2>Аккаунт и синхронизация</h2></div>
+        <p id="cloud-status" role="status" aria-live="polite">Данные сохраняются в этом браузере.</p>
+        <form id="cloud-auth-form" hidden>
+          <div class="form-grid form-grid--2">
+            <label class="field"><span class="field__label">Email</span><input id="cloud-email" type="email" autocomplete="username" required/></label>
+            <label class="field"><span class="field__label">Пароль</span><input id="cloud-password" type="password" autocomplete="current-password" minlength="8" required/></label>
+          </div>
+          <div class="export-actions"><button class="btn btn--primary" type="submit" value="login">Войти</button><button class="btn btn--ghost" type="submit" value="register">Зарегистрироваться</button></div>
+          <p class="panel__hint">Регистрация по email. После подтверждения почты войдите в этот аккаунт на каждом устройстве.</p>
+        </form>
+        <div id="cloud-account" hidden>
+          <p>Аккаунт: <strong id="cloud-email-label"></strong></p>
+          <div class="export-actions"><button type="button" id="cloud-sync" class="btn btn--primary">Синхронизировать</button><button type="button" id="cloud-import-local" class="btn btn--ghost">Перенести данные этого браузера</button><button type="button" id="cloud-logout" class="btn btn--ghost">Выйти</button></div>
+        </div>
+        <div id="cloud-conflict" hidden>
+          <p>Есть изменения на двух устройствах. Выберите версию; перед заменой локальных данных создаётся резервная копия.</p>
+          <div class="export-actions"><button id="cloud-use-server" type="button" class="btn btn--primary">Загрузить версию из облака</button><button id="cloud-use-local" type="button" class="btn btn--ghost">Отправить версию этого устройства</button></div>
+        </div>
+      </div>
       <!-- Общая аналитика -->
       <div class="panel" id="kpi-analytics-panel">
         <div class="panel__head">
@@ -557,13 +577,15 @@
 
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="data.js?v=20261115daily"></script>
-  <script src="utils.js?v=20261115daily"></script>
-  <script src="storage.js?v=20261115daily"></script>
-  <script src="employee.js?v=20261115daily"></script>
-  <script src="calculator.js?v=20261115daily"></script>
-  <script src="export.js?v=20261115daily"></script>
-  <script src="script.js?v=20261115daily"></script>
-  <script src="ui.js?v=20261115daily"></script>
+  <script src="cloud-config.js?v=20261115auth"></script>
+  <script src="cloud-sync.js?v=20261115auth"></script>
+  <script src="data.js?v=20261115auth"></script>
+  <script src="utils.js?v=20261115auth"></script>
+  <script src="storage.js?v=20261115auth"></script>
+  <script src="employee.js?v=20261115auth"></script>
+  <script src="calculator.js?v=20261115auth"></script>
+  <script src="export.js?v=20261115auth"></script>
+  <script src="script.js?v=20261115auth"></script>
+  <script src="ui.js?v=20261115auth"></script>
 </body>
 </html>

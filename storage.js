@@ -20,6 +20,8 @@ class StorageService {
   ) {
     this.employeesKey = employeesKey;
     this.backupsKey = backupsKey;
+    this.accountId = null;
+    this.suppressCloud = false;
   }
 
   /**
@@ -28,9 +30,13 @@ class StorageService {
    * @param {*} [fallback=null]
    * @returns {*}
    */
+  scopedKey(key) {
+    return this.accountId ? `salary_account:${this.accountId}:${key}` : key;
+  }
+
   get(key, fallback = null) {
     try {
-      const raw = localStorage.getItem(key);
+      const raw = localStorage.getItem(this.scopedKey(key));
       if (raw === null) return fallback;
       return JSON.parse(raw);
     } catch (error) {
@@ -47,7 +53,7 @@ class StorageService {
    */
   set(key, value) {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(this.scopedKey(key), JSON.stringify(value));
       return true;
     } catch (error) {
       console.error('StorageService.set error:', key, error);
@@ -60,7 +66,7 @@ class StorageService {
    * @param {string} key
    */
   remove(key) {
-    localStorage.removeItem(key);
+    localStorage.removeItem(this.scopedKey(key));
   }
 
   /* ------------------------------------------------------------------------
@@ -85,7 +91,17 @@ class StorageService {
     if (createBackup) {
       this.createBackup(employees);
     }
-    this.set(this.employeesKey, employees);
+    const changed = JSON.stringify(this.loadEmployees()) !== JSON.stringify(employees);
+    this.saveFailed = !this.set(this.employeesKey, employees);
+    if (this.saveFailed) return false;
+    if (changed && this.accountId && !this.suppressCloud) {
+      const meta = this.get('cloud_meta', { revision: 0, dirty: false, version: 0 });
+      meta.dirty = true;
+      meta.version = (meta.version || 0) + 1;
+      this.set('cloud_meta', meta);
+      window.dispatchEvent(new CustomEvent('salary-data-changed', { detail: { accountId: this.accountId } }));
+    }
+    return true;
   }
 
   /**
