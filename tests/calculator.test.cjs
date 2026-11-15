@@ -31,5 +31,15 @@ for (const month of [1,11]) {
  assert.equal(SalaryCalculator.calculatePeriod(period).payout,1000);
 }
 assert.equal(DayLineItem.fromJSON(line('smart_green',10,BLOCKS.SALES,'cash').toJSON()).paymentMethod,'cash');
-console.log('Salary rules: all assertions passed');
+const plannedPeriod = new EmployeePeriod(2026, 11);
+plannedPeriod.salaryGoal = {desired:60000,sales:100000,indicatorId:'accessories',paymentMethod:'qr_credit'};
+const estimate = SalaryCalculator.calculateSalaryGoal(plannedPeriod, {payout:30000,seasonalityCoefficient:0.9,kpi:{factor:1}});
+assert.equal(estimate.bonus,9000);
+assert.equal(estimate.projected,39000);
+assert.equal(estimate.requiredSales,333334);
+assert.equal(estimate.remaining,21000);
+plannedPeriod.salaryGoal.desired=20000;
+assert.equal(SalaryCalculator.calculateSalaryGoal(plannedPeriod,{payout:30000,seasonalityCoefficient:0.9,kpi:{factor:1}}).requiredSales,0);
+assert.equal(EmployeePeriod.fromJSON(plannedPeriod.toJSON()).salaryGoal.sales,100000);
+console.log('Salary and salary goal rules: all assertions passed');
 `, context);

@@ -177,6 +177,23 @@ class SalaryCalculator {
    * @param {EmployeePeriod} period
    * @returns {Object}
    */
+  static calculateSalaryGoal(period, calculation) {
+    const goal = period.salaryGoal;
+    const indicator = DataService.getEconomicIndicator(goal.indicatorId);
+    const category = DataService.getCityCategoryKey(period.cityId);
+    const eligible = indicator && indicator.rateType === RATE_TYPES.PERCENT;
+    const baseRate = eligible ? SalaryCalculator.calculateLine({ block: BLOCKS.SALES, indicatorId: indicator.id, value: 1000000, paymentMethod: goal.paymentMethod }, category, period).accrual / 1000000 : 0;
+    const effectiveRate = baseRate * calculation.seasonalityCoefficient * calculation.kpi.factor;
+    const gap = Math.max(0, Utils.roundMoney(goal.desired - calculation.payout));
+    const bonus = Utils.roundMoney(goal.sales * effectiveRate);
+    const projected = Utils.roundMoney(calculation.payout + bonus);
+    return {
+      effectiveRate, gap, bonus, projected,
+      requiredSales: gap === 0 ? 0 : effectiveRate > 0 ? Math.ceil(gap / effectiveRate) : null,
+      remaining: Math.max(0, Utils.roundMoney(goal.desired - projected))
+    };
+  }
+
   static calculatePeriod(period) {
     const hourlyRate = DataService.getHourlyRate(period.cityId);
     const city = DataService.getCity(period.cityId);

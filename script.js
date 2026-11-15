@@ -245,6 +245,19 @@ class UIController {
     this.bindEvent('#work-days', 'input', () => this.recalculateAndRefresh());
     this.bindEvent('#work-hours', 'input', () => this.recalculateAndRefresh());
 
+    const goalPanel = Utils.$('#salary-goal-panel');
+    goalPanel?.addEventListener('input', () => {
+      if (!this.activePeriod) return;
+      this.activePeriod.salaryGoal = {
+        desired: Math.max(0, Utils.toNumber(Utils.$('#goal-desired').value, 0)),
+        sales: Math.max(0, Utils.toNumber(Utils.$('#goal-sales').value, 0)),
+        indicatorId: Utils.$('#goal-indicator').value,
+        paymentMethod: Utils.$('#goal-payment').value
+      };
+      this.renderSalaryGoal();
+      this.autoSave();
+    });
+
     // KPI — делегирование на панель, чтобы не терять обработчики
     const kpiPanel = Utils.$('#kpi-panel');
     if (kpiPanel) {
@@ -1050,7 +1063,29 @@ class UIController {
     }
   }
 
+  renderSalaryGoal() {
+    if (!this.activePeriod || !this.calculation) return;
+    const goal = this.activePeriod.salaryGoal;
+    const select = Utils.$('#goal-indicator');
+    if (!select.options.length) {
+      DataService.getEconomicIndicators().filter(item => item.rateType === RATE_TYPES.PERCENT).forEach(item => select.add(new Option(item.name, item.id)));
+    }
+    const fields = { '#goal-desired': goal.desired || '', '#goal-sales': goal.sales || '', '#goal-indicator': goal.indicatorId, '#goal-payment': goal.paymentMethod };
+    Object.entries(fields).forEach(([id, value]) => {
+      const el = Utils.$(id);
+      if (document.activeElement !== el) el.value = value;
+    });
+    const estimate = SalaryCalculator.calculateSalaryGoal(this.activePeriod, this.calculation);
+    Utils.setText('#goal-gap', goal.desired > 0 ? Utils.formatMoney(estimate.gap) : 'Укажите цель');
+    Utils.setText('#goal-required', goal.desired > 0 ? estimate.requiredSales === null ? 'Нет начисления по выбранному показателю' : Utils.formatMoney(estimate.requiredSales) : 'Укажите цель');
+    Utils.setText('#goal-bonus', Utils.formatMoney(estimate.bonus));
+    Utils.setText('#goal-projected', Utils.formatMoney(estimate.projected));
+    Utils.setText('#goal-remaining', goal.desired > 0 ? Utils.formatMoney(estimate.remaining) : 'Укажите цель');
+    Utils.setText('#goal-rate', `Сотрудник получит примерно ${Utils.formatMoney(estimate.effectiveRate * 1000)} с каждых 1 000 ₽ продаж с учётом текущих коэффициентов. Способ оплаты влияет только на товарные показатели от смартфонов до выкупа.`);
+  }
+
   renderMonthTotals() {
+    this.renderSalaryGoal();
     if (!this.calculation) return;
     const c = this.calculation;
     const map = {

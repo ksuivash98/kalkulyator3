@@ -98,6 +98,25 @@
         </div>
       </div>
 
+      <div class="panel" id="salary-goal-panel">
+        <div class="panel__head"><h2>План до желаемой зарплаты</h2></div>
+        <div class="form-grid form-grid--2">
+          <label class="field"><span class="field__label">Желаемая зарплата за месяц, ₽</span><input id="goal-desired" type="number" min="0" step="1000" placeholder="Например, 60000"/></label>
+          <label class="field"><span class="field__label">Дополнительные продажи до конца месяца, ₽</span><input id="goal-sales" type="number" min="0" step="1000" placeholder="Например, 100000"/></label>
+          <label class="field"><span class="field__label">Что планируем продавать</span><select id="goal-indicator"></select></label>
+          <label class="field"><span class="field__label">Способ оплаты товаров</span><select id="goal-payment"><option value="qr_credit">QR / кредит ×1</option><option value="card">Карта ×0,75</option><option value="cash">Наличные ×1,25</option></select></label>
+        </div>
+        <div class="analytics-grid">
+          <div class="analytics-card"><span>До желаемой зарплаты сейчас</span><strong id="goal-gap">—</strong></div>
+          <div class="analytics-card"><span>Нужно дополнительных продаж до цели</span><strong id="goal-required">—</strong></div>
+          <div class="analytics-card"><span>Примерная премия с запланированных продаж</span><strong id="goal-bonus">—</strong></div>
+          <div class="analytics-card"><span>Примерная зарплата с этим планом</span><strong id="goal-projected">—</strong></div>
+          <div class="analytics-card"><span>Останется до цели после выполнения плана</span><strong id="goal-remaining">—</strong></div>
+        </div>
+        <p class="panel__hint" id="goal-rate"></p>
+        <p class="panel__hint">Прогноз прибавляет будущие продажи к текущему расчёту. Часы и KPI остаются текущими; все продажи считаются по выбранному показателю. Налоги и удержания не рассчитываются. План не добавляет реальные продажи в дневник.</p>
+      </div>
+
       <!-- Период и город -->
       <div class="panel">
         <div class="panel__head">
@@ -519,13 +538,13 @@
 
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="data.js?v=20261115"></script>
-  <script src="utils.js?v=20261115"></script>
-  <script src="storage.js?v=20261115"></script>
-  <script src="employee.js?v=20261115"></script>
-  <script src="calculator.js?v=20261115"></script>
-  <script src="export.js?v=20261115"></script>
-  <script src="script.js?v=20261115"></script>
-  <script src="ui.js?v=20261115"></script>
+  <script src="data.js?v=20261115goal"></script>
+  <script src="utils.js?v=20261115goal"></script>
+  <script src="storage.js?v=20261115goal"></script>
+  <script src="employee.js?v=20261115goal"></script>
+  <script src="calculator.js?v=20261115goal"></script>
+  <script src="export.js?v=20261115goal"></script>
+  <script src="script.js?v=20261115goal"></script>
+  <script src="ui.js?v=20261115goal"></script>
 </body>
 </html>

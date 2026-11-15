@@ -168,6 +168,12 @@ class EmployeePeriod {
     this.workDays = Utils.toNumber(data.workDays, 0);
     /** @type {number} */
     this.workHours = Utils.toNumber(data.workHours, 0);
+    this.salaryGoal = {
+      desired: Math.max(0, Utils.toNumber(data.salaryGoal?.desired, 0)),
+      sales: Math.max(0, Utils.toNumber(data.salaryGoal?.sales, 0)),
+      indicatorId: data.salaryGoal?.indicatorId || 'accessories',
+      paymentMethod: ['card', 'cash', 'qr_credit'].includes(data.salaryGoal?.paymentMethod) ? data.salaryGoal.paymentMethod : 'qr_credit'
+    };
     /** @type {Object} */
     this.kpi = EmployeePeriod.normalizeKpi(data.kpi);
     /** @type {Object<string, DayData>} */
@@ -323,6 +329,7 @@ class EmployeePeriod {
       cityId: this.cityId,
       workDays: this.workDays,
       workHours: this.workHours,
+      salaryGoal: { ...this.salaryGoal },
       kpi: { ...this.kpi },
       days
     };
