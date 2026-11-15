@@ -1201,7 +1201,7 @@ const administrativeIndicators = Object.freeze([
   Object.freeze({ id: 'recommend_manager', name: 'Рекомендация руководителя', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 5000, dota1: 5000, dota2: 5000 }) }),
   Object.freeze({ id: 'recommend_ptt', name: 'Рекомендация ПТТ', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 3000, dota1: 3000, dota2: 3000 }) }),
   Object.freeze({ id: 'salon_open', name: 'Подготовка к открытию нового салона', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 1000, dota1: 1000, dota2: 1000 }) }),
-  Object.freeze({ id: 'vacation_cover', name: 'Отзыв из отпуска при целевом ФО', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 1000, dota1: 1000, dota2: 1000 }) }),
+  Object.freeze({ id: 'vacation_cover', name: 'Проведение ФО', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 1000, dota1: 1000, dota2: 1000 }) }),
   Object.freeze({ id: 'senior_checklist', name: 'Старший продавец: чек-лист ДОВ ≥90%', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 1000, dota1: 1000, dota2: 1000 }) }),
   Object.freeze({ id: 'senior_sim', name: 'Старший продавец: план SIM 1 и 2 декады', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 1000, dota1: 1000, dota2: 1000 }) }),
   Object.freeze({ id: 'senior_services', name: 'Старший продавец: план услуг', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 2000, dota1: 2000, dota2: 2000 }) }),
