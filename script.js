@@ -1135,7 +1135,7 @@ class UIController {
     const progress = SalaryCalculator.calculatePlanProgress(this.activePeriod, result, this.calculation);
     const progressTotals = Utils.$('#goal-progress-totals');
     const dailyMoney = value => value === null ? 'Нет оставшихся смен' : Utils.formatMoney(value);
-    [['Осталось смен', String(progress.remainingShifts)], ['Заработано по дневнику', Utils.formatMoney(progress.earned)], ['Осталось до желаемой зарплаты', Utils.formatMoney(progress.salaryRemaining)], ['Нужно зарабатывать в день (смену) до цели', dailyMoney(progress.neededEarningsPerShift)], ['Осталось до прогнозной зарплаты плана', Utils.formatMoney(progress.planSalaryRemaining)], ['Нужно за смену до зарплаты плана', dailyMoney(progress.neededPlanEarningsPerShift)]].forEach(([label, value]) => {
+    [['Осталось смен', String(progress.remainingShifts)], ['Заработано по дневнику', Utils.formatMoney(progress.earned)], ['Осталось до желаемой зарплаты', Utils.formatMoney(progress.salaryRemaining)], ['Нужно зарабатывать в день (смену) до цели', dailyMoney(progress.neededEarningsPerShift)], ['Осталось до прогнозной зарплаты плана', Utils.formatMoney(progress.planSalaryRemaining)]].forEach(([label, value]) => {
       const card = document.createElement('div'); card.className = 'analytics-card';
       const caption = document.createElement('span'); caption.textContent = label;
       const amount = document.createElement('strong'); amount.textContent = value;
