@@ -1582,3 +1582,9 @@ html[data-theme="dark"] .legend--top {
 .goal-plan-row select, .goal-plan-row input { width: 100%; }
 #goal-add-line { margin: 12px 0; }
 @media (max-width: 900px) { .goal-plan-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .goal-plan-row > :first-child { grid-column: 1 / -1; } }
+
+.goal-table-wrap { overflow-x: auto; margin: 16px 0; }
+.goal-plan-table { width: 100%; border-collapse: collapse; }
+.goal-plan-table th, .goal-plan-table td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border, #dce6e2); }
+#goal-auto details { margin: 16px 0; }
+#goal-auto-status { font-weight: 600; }

@@ -195,6 +195,57 @@ class SalaryCalculator {
     };
   }
 
+  static calculateRealisticPlan(period) {
+    const goal = period.salaryGoal;
+    const config = Object.fromEntries(REALISTIC_PLAN_FIELDS.map(([key, , fallback]) => [key, goal.realistic?.[key] ?? fallback]));
+    const hours = config.hours ?? period.workHours;
+    const shifts = config.shifts ?? period.workDays;
+    const errors = [];
+    if (!(goal.desired > 0)) errors.push('Укажите желаемую зарплату.');
+    if (!(hours > 0) || !(shifts > 0) || !Number.isInteger(shifts)) errors.push('Укажите часы и целое число смен больше нуля.');
+    if (!(config.multiplier >= 0.7 && config.multiplier <= 1.4)) errors.push('Мультипликатор должен быть от 0,7 до 1,4.');
+    const shares = ['sim', 'accessories', 'smartphones', 'services', 'mnp'];
+    if (Math.abs(shares.reduce((sum, key) => sum + config[key + 'Share'], 0) - 100) > 0.000001) errors.push('Сумма долей бонуса должна быть 100%.');
+    for (const [key] of REALISTIC_PLAN_FIELDS) {
+      const value = config[key];
+      if (value !== null && (!Number.isFinite(value) || (key !== 'admin' && value < 0))) errors.push('Проверьте числовые настройки плана.');
+      if ((key.endsWith('Share') || key.endsWith('Credit')) && value > 100) errors.push('Доли должны быть от 0 до 100%.');
+      if (key.endsWith('Count') && !Number.isInteger(value)) errors.push('Количество операций должно быть целым.');
+    }
+    const category = DataService.getCityCategoryKey(period.cityId);
+    const rates = Object.fromEntries(REALISTIC_PLAN_PRODUCTS.map(([key, , block, id]) => {
+      const rate = DataService.getIndicatorRateByCategory(DataService.getIndicator(block, id), category);
+      const supplied = goal.rates?.[key];
+      return [key, supplied == null ? rate : supplied];
+    }));
+    // The temporary application incentive remains restricted to November 2026.
+    if (period.year !== 2026 || period.month !== 11) rates.application = 0;
+    if (Object.values(rates).some(rate => !Number.isFinite(rate) || rate < 0)) errors.push('Ставки должны быть неотрицательными числами.');
+    const salary = Utils.roundMoney(hours * DataService.getHourlyRate(period.cityId));
+    const neededBonus = Math.max(0, goal.desired - salary - config.admin);
+    const factor = config.multiplier * (1 + DataService.getSeasonalityPercent(period.month) / 100);
+    if (errors.length) return { errors: [...new Set(errors)], rates, salary, neededBonus };
+    const quantities = { gold: config.goldCount, abon: config.abonCount, application: config.applicationCount };
+    const fixedBonus = (quantities.gold * rates.gold + quantities.abon * rates.abon + quantities.application * rates.application) * factor;
+    const remainder = Math.max(0, neededBonus - fixedBonus);
+    const ceil = value => Math.max(0, Math.ceil(value - 1e-9));
+    const capped = [];
+    shares.forEach(key => {
+      const requested = rates[key] > 0 ? ceil(remainder * config[key + 'Share'] / 100 / (factor * rates[key])) : 0;
+      const limit = key === 'mnp' ? Math.floor(config.mnpLimit) : key === 'sim' ? Math.floor(shifts * config.simLimit) : shifts * config[key + 'Limit'];
+      quantities[key] = Math.min(limit, requested);
+      if (requested > limit) capped.push(key);
+    });
+    const lines = REALISTIC_PLAN_PRODUCTS.map(([key, name, , , unit]) => {
+      const quantity = quantities[key];
+      return { key, name, unit, quantity, perShift: key === 'application' ? Utils.roundMoney(quantity / shifts) : ceil(quantity / shifts), rate: rates[key], bonus: Utils.roundMoney(quantity * rates[key] * factor), capped: capped.includes(key) };
+    });
+    const bonus = Utils.roundMoney(lines.reduce((sum, line) => sum + line.quantity * line.rate * factor, 0));
+    const projected = Utils.roundMoney(salary + config.admin + bonus);
+    const credit = Math.round(quantities.smartphones * config.smartphonesCredit / 100 + quantities.accessories * config.accessoriesCredit / 100 + quantities.services * config.servicesCredit / 100 + quantities.application * config.insurancePerApplication);
+    return { errors: [], rates, lines, salary, neededBonus, bonus, projected, remaining: Math.max(0, Utils.roundMoney(goal.desired - projected)), credit, creditPerShift: ceil(credit / shifts), factor, capped };
+  }
+
   static calculatePeriod(period) {
     const hourlyRate = DataService.getHourlyRate(period.cityId);
     const city = DataService.getCity(period.cityId);

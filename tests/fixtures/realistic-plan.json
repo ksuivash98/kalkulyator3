@@ -1,0 +1,28 @@
+{
+  "source": "Калькулятор_зарплаты_реалистичные_планы.xlsx, ПЛАНЫ!6; cached numeric results only",
+  "input": {
+    "desired": 50000,
+    "hours": 178,
+    "shifts": 20,
+    "multiplier": 1,
+    "admin": 0
+  },
+  "expected": {
+    "salary": 17800,
+    "neededBonus": 32200,
+    "projected": 42640,
+    "remaining": 7360,
+    "credit": 220000,
+    "creditPerShift": 11000,
+    "quantities": {
+      "sim": 60,
+      "accessories": 70000,
+      "smartphones": 300000,
+      "services": 30000,
+      "gold": 5,
+      "abon": 5,
+      "application": 10,
+      "mnp": 7
+    }
+  }
+}

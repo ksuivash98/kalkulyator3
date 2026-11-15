@@ -245,6 +245,20 @@ class UIController {
     this.bindEvent('#work-days', 'input', () => this.recalculateAndRefresh());
     this.bindEvent('#work-hours', 'input', () => this.recalculateAndRefresh());
 
+    this.bindEvent('#goal-mode', 'change', e => {
+      this.activePeriod.salaryGoal.mode = e.target.value;
+      this.renderSalaryGoal(true); this.autoSave();
+    });
+    Utils.$('#goal-auto')?.addEventListener('input', e => {
+      const field = e.target.dataset.planField;
+      const rate = e.target.dataset.planRate;
+      if (!field && !rate) return;
+      const goal = this.activePeriod.salaryGoal;
+      if (field) goal.realistic[field] = e.target.value === '' && ['hours', 'shifts'].includes(field) ? null : Number(e.target.value);
+      if (rate) goal.rates[rate] = e.target.value === '' ? null : Number(e.target.value) / (e.target.dataset.percent === 'true' ? 100 : 1);
+      this.renderSalaryGoal(); this.autoSave();
+    });
+
     this.bindEvent('#goal-desired', 'input', () => {
       if (!this.activePeriod) return;
       this.activePeriod.salaryGoal.desired = Math.max(0, Utils.toNumber(Utils.$('#goal-desired').value, 0));
@@ -1063,11 +1077,77 @@ class UIController {
     }
   }
 
+  renderRealisticPlan() {
+    const goal = this.activePeriod.salaryGoal;
+    const result = SalaryCalculator.calculateRealisticPlan(this.activePeriod);
+    const main = Utils.$('#goal-auto-main');
+    const settings = Utils.$('#goal-auto-settings');
+    if (!main.children.length) {
+      const groups = {};
+      REALISTIC_PLAN_FIELDS.forEach(([key, label, , group]) => {
+        let container = main;
+        if (group !== 'Основные данные') {
+          if (!groups[group]) {
+            const title = document.createElement('h3'); title.textContent = group; settings.appendChild(title);
+            groups[group] = document.createElement('div'); groups[group].className = 'form-grid form-grid--2'; settings.appendChild(groups[group]);
+          }
+          container = groups[group];
+        }
+        const field = document.createElement('label'); field.className = 'field';
+        const caption = document.createElement('span'); caption.className = 'field__label'; caption.textContent = label;
+        const input = document.createElement('input'); input.type = 'number'; input.step = 'any'; input.dataset.planField = key;
+        if (key !== 'admin') input.min = '0';
+        field.append(caption, input); container.appendChild(field);
+      });
+      const title = document.createElement('h3'); title.textContent = 'Ставки плана'; settings.appendChild(title);
+      const rates = document.createElement('div'); rates.className = 'form-grid form-grid--2'; settings.appendChild(rates);
+      REALISTIC_PLAN_PRODUCTS.forEach(([key, name, , , unit]) => {
+        const field = document.createElement('label'); field.className = 'field';
+        const caption = document.createElement('span'); caption.className = 'field__label'; caption.textContent = `${name}: ${unit === '₽' ? '% от суммы' : '₽ за штуку'}`;
+        const input = document.createElement('input'); input.type = 'number'; input.min = '0'; input.step = 'any'; input.dataset.planRate = key; input.dataset.percent = String(unit === '₽');
+        field.append(caption, input); rates.appendChild(field);
+      });
+    }
+    main.parentElement.querySelectorAll('[data-plan-field]').forEach(input => {
+      const key = input.dataset.planField;
+      if (document.activeElement !== input) input.value = goal.realistic[key] ?? '';
+      if (key === 'hours') input.placeholder = `Из рабочего времени: ${this.activePeriod.workHours}`;
+      if (key === 'shifts') input.placeholder = `Из рабочих дней: ${this.activePeriod.workDays}`;
+    });
+    settings.querySelectorAll('[data-plan-rate]').forEach(input => {
+      const key = input.dataset.planRate; const scale = input.dataset.percent === 'true' ? 100 : 1;
+      if (document.activeElement !== input) input.value = goal.rates[key] == null ? '' : goal.rates[key] * scale;
+      input.placeholder = `По категории: ${Utils.formatNumber(result.rates[key] * scale)}`;
+    });
+    Utils.setText('#goal-auto-status', result.errors.length ? result.errors.join(' ') : result.remaining > 0 ? 'Цель выше реалистичного плана — есть недобор.' : 'Цель покрыта планом.');
+    const totals = Utils.$('#goal-auto-totals'); totals.innerHTML = '';
+    Utils.$('#goal-auto-rows').innerHTML = '';
+    Utils.setText('#goal-auto-credit', '');
+    if (result.errors.length) return;
+    [['Оклад', result.salary], ['Нужен торговый бонус', result.neededBonus], ['Премия по плану', result.bonus], ['Прогноз зарплаты', result.projected], ['Не хватает до цели', result.remaining]].forEach(([label, value]) => {
+      const card = document.createElement('div'); card.className = 'analytics-card';
+      const caption = document.createElement('span'); caption.textContent = label;
+      const amount = document.createElement('strong'); amount.textContent = Utils.formatMoney(value);
+      card.append(caption, amount); totals.appendChild(card);
+    });
+    result.lines.forEach(line => {
+      const row = document.createElement('tr');
+      [line.name + (line.capped ? ' — предел' : ''), `${Utils.formatNumber(line.quantity)} ${line.unit}`, `${Utils.formatNumber(line.perShift)} ${line.unit}`, Utils.formatMoney(line.bonus)].forEach(value => { const cell = document.createElement('td'); cell.textContent = value; row.appendChild(cell); });
+      Utils.$('#goal-auto-rows').appendChild(row);
+    });
+    Utils.setText('#goal-auto-credit', `Кредитный оборот: ${Utils.formatMoney(result.credit)} за месяц / ${Utils.formatMoney(result.creditPerShift)} за смену. Сезонность × мультипликатор: ${Utils.formatNumber(result.factor)}. Объёмы на смену округлены вверх, заявки — до сотых, как в Excel.`);
+  }
+
   renderSalaryGoal(force = false) {
     if (!this.activePeriod || !this.calculation) return;
     const goal = this.activePeriod.salaryGoal;
     const desired = Utils.$('#goal-desired');
     if (document.activeElement !== desired) desired.value = goal.desired || '';
+    const automatic = goal.mode !== 'manual';
+    Utils.$('#goal-mode').value = automatic ? 'auto' : 'manual';
+    Utils.$('#goal-auto').hidden = !automatic;
+    Utils.$('#goal-manual').hidden = automatic;
+    if (automatic) { this.renderRealisticPlan(); return; }
     const estimate = SalaryCalculator.calculateSalaryGoal(this.activePeriod, this.calculation);
     const container = Utils.$('#goal-lines');
     if (force || !container.contains(document.activeElement)) {

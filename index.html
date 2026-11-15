@@ -103,6 +103,17 @@
         <div class="form-grid form-grid--2">
           <label class="field"><span class="field__label">Желаемая зарплата за месяц, ₽</span><input id="goal-desired" type="number" min="0" step="1000" placeholder="Например, 60000"/></label>
         </div>
+        <label class="field"><span class="field__label">Как составить план</span><select id="goal-mode"><option value="auto">Автоматически — реалистичный план как в Excel</option><option value="manual">Вручную — свой набор показателей</option></select></label>
+        <div id="goal-auto">
+          <div id="goal-auto-main" class="form-grid form-grid--2"></div>
+          <details><summary>Настройки объёмов, распределения и ставок</summary><div id="goal-auto-settings"></div><p class="panel__hint">Пустая ставка берётся из категории выбранного города. Процентные ставки вводятся в процентах. Пример: 10 = 10%. Кредитные заявки оплачиваются только в ноябре 2026.</p></details>
+          <p id="goal-auto-status" role="status"></p>
+          <div class="analytics-grid" id="goal-auto-totals"></div>
+          <div class="goal-table-wrap"><table class="goal-plan-table"><thead><tr><th>Показатель</th><th>За месяц</th><th>За смену</th><th>Премия за месяц</th></tr></thead><tbody id="goal-auto-rows"></tbody></table></div>
+          <p id="goal-auto-credit" class="panel__hint"></p>
+          <p class="panel__hint">План на весь месяц: оклад + административный бонус + торговая премия × сезонность × заданный мультипликатор. Фактические продажи из дневника повторно не прибавляются. Достигнутый предел не увеличивается ради цели: показываем недобор. Кредитный оборот — часть продаж, отдельная премия с него не начисляется. Налоги и удержания не рассчитываются.</p>
+        </div>
+        <div id="goal-manual" hidden>
         <div id="goal-lines" class="lines-list"></div>
         <button type="button" id="goal-add-line" class="btn btn--primary btn--sm">＋ Добавить показатель в план</button>
         <div class="analytics-grid">
@@ -114,6 +125,7 @@
         </div>
         <p class="panel__hint" id="goal-rate"></p>
         <p class="panel__hint">Прогноз прибавляет будущие продажи к текущему расчёту. Часы и KPI остаются текущими; каждая строка считается по своей ставке. Административные бонусы не зависят от сезонности и KPI. Налоги и удержания не рассчитываются. План не добавляет реальные продажи в дневник.</p>
+        </div>
       </div>
 
       <!-- Период и город -->
@@ -537,13 +549,13 @@
 
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="data.js?v=20261115multigoal"></script>
-  <script src="utils.js?v=20261115multigoal"></script>
-  <script src="storage.js?v=20261115multigoal"></script>
-  <script src="employee.js?v=20261115multigoal"></script>
-  <script src="calculator.js?v=20261115multigoal"></script>
-  <script src="export.js?v=20261115multigoal"></script>
-  <script src="script.js?v=20261115multigoal"></script>
-  <script src="ui.js?v=20261115multigoal"></script>
+  <script src="data.js?v=20261115realistic"></script>
+  <script src="utils.js?v=20261115realistic"></script>
+  <script src="storage.js?v=20261115realistic"></script>
+  <script src="employee.js?v=20261115realistic"></script>
+  <script src="calculator.js?v=20261115realistic"></script>
+  <script src="export.js?v=20261115realistic"></script>
+  <script src="script.js?v=20261115realistic"></script>
+  <script src="ui.js?v=20261115realistic"></script>
 </body>
 </html>

@@ -1208,3 +1208,38 @@ const administrativeIndicators = Object.freeze([
   Object.freeze({ id: 'senior_mnp', name: 'Старший продавец: план MNP', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 2000, dota1: 2000, dota2: 2000 }) }),
   Object.freeze({ id: 'senior_partner', name: 'Старший продавец: дополнительный KPI партнёра', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 2000, dota1: 2000, dota2: 2000 }) })
 ]);
+
+// Defaults match the supplied workbook; settings are saved per employee/month.
+const REALISTIC_PLAN_FIELDS = Object.freeze([
+  ['hours', 'Часов за месяц', null, 'Основные данные'],
+  ['shifts', 'Смен за месяц', null, 'Основные данные'],
+  ['multiplier', 'Мультипликатор плана (0,7–1,4)', 1, 'Основные данные'],
+  ['admin', 'Административный бонус за месяц, ₽', 0, 'Основные данные'],
+  ['goldCount', 'Золото / комбо за месяц, шт.', 5, 'Фиксированные объёмы'],
+  ['abonCount', 'Абонементы Mixx за месяц, шт.', 5, 'Фиксированные объёмы'],
+  ['applicationCount', 'Кредитные заявки за месяц, шт.', 10, 'Фиксированные объёмы'],
+  ['simShare', 'SIM, % нужного бонуса', 35, 'Распределение бонуса'],
+  ['accessoriesShare', 'Аксессуары, %', 30, 'Распределение бонуса'],
+  ['smartphonesShare', 'Смартфоны, %', 10, 'Распределение бонуса'],
+  ['servicesShare', 'Услуги, %', 20, 'Распределение бонуса'],
+  ['mnpShare', 'MNP, %', 5, 'Распределение бонуса'],
+  ['simLimit', 'SIM за смену, шт.', 3, 'Пределы реального плана'],
+  ['accessoriesLimit', 'Аксессуары за смену, ₽', 3500, 'Пределы реального плана'],
+  ['smartphonesLimit', 'Смартфоны за смену, ₽', 15000, 'Пределы реального плана'],
+  ['servicesLimit', 'Услуги за смену, ₽', 1500, 'Пределы реального плана'],
+  ['mnpLimit', 'MNP за месяц, шт.', 8, 'Пределы реального плана'],
+  ['smartphonesCredit', 'Смартфоны в кредит, % оборота', 50, 'Оценка кредитного оборота'],
+  ['accessoriesCredit', 'Аксессуары в кредит, % оборота', 50, 'Оценка кредитного оборота'],
+  ['servicesCredit', 'Услуги в кредит, % оборота', 50, 'Оценка кредитного оборота'],
+  ['insurancePerApplication', 'Страховка внутри кредита, ₽ / заявку', 2000, 'Оценка кредитного оборота']
+]);
+const REALISTIC_PLAN_PRODUCTS = Object.freeze([
+  ['sim', 'SIM (High Bundle ТП)', BLOCKS.OPERATOR, 'high_bundle_tp', 'шт.'],
+  ['accessories', 'Аксессуары', BLOCKS.SALES, 'accessories', '₽'],
+  ['smartphones', 'Смартфоны Standart и планшеты', BLOCKS.SALES, 'smart_standart_tablet', '₽'],
+  ['services', 'Услуги / настройки', BLOCKS.SALES, 'services_settings', '₽'],
+  ['gold', 'Золото / комбо 3 месяца', BLOCKS.OPERATOR, 'gold_combo_sim_3m', 'шт.'],
+  ['abon', 'Абонемент Mixx', BLOCKS.OPERATOR, 'mixx', 'шт.'],
+  ['application', 'Кредитные заявки (ноябрь 2026)', BLOCKS.SALES, 'credit_application_nov26', 'шт.'],
+  ['mnp', 'MNP, кроме МТС', BLOCKS.OPERATOR, 'mnp', 'шт.']
+]);

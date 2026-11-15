@@ -172,6 +172,9 @@ class EmployeePeriod {
     const goalLines = Array.isArray(savedGoal.lines) ? savedGoal.lines : [{ block: BLOCKS.SALES, indicatorId: savedGoal.indicatorId || 'accessories', value: savedGoal.sales || 0, paymentMethod: savedGoal.paymentMethod }];
     this.salaryGoal = {
       desired: Math.max(0, Utils.toNumber(savedGoal.desired, 0)),
+      mode: savedGoal.mode === 'manual' ? 'manual' : 'auto',
+      realistic: Object.fromEntries(REALISTIC_PLAN_FIELDS.map(([key, , fallback]) => [key, savedGoal.realistic?.[key] == null ? fallback : Utils.toNumber(savedGoal.realistic[key], fallback)])),
+      rates: Object.fromEntries(REALISTIC_PLAN_PRODUCTS.map(([key]) => [key, savedGoal.rates?.[key] == null ? null : Math.max(0, Utils.toNumber(savedGoal.rates[key], 0))])),
       lines: goalLines.map(line => new DayLineItem({ ...line, value: Math.max(0, Utils.toNumber(line.value, 0)) }).toJSON())
     };
     /** @type {Object} */
@@ -329,7 +332,7 @@ class EmployeePeriod {
       cityId: this.cityId,
       workDays: this.workDays,
       workHours: this.workHours,
-      salaryGoal: { desired: this.salaryGoal.desired, lines: this.salaryGoal.lines.map(line => ({ ...line })) },
+      salaryGoal: { ...this.salaryGoal, realistic: { ...this.salaryGoal.realistic }, rates: { ...this.salaryGoal.rates }, lines: this.salaryGoal.lines.map(line => ({ ...line })) },
       kpi: { ...this.kpi },
       days
     };
