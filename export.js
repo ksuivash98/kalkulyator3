@@ -385,6 +385,7 @@ class ExportService {
     push([]);
     push(['Общая сумма продаж', calculation.totalSales]);
     push(['Премия до сезонности', calculation.totalPremium]);
+    push(['Административный бонус (без коэффициентов)', calculation.administrativePremium]);
     push(['Сезонность', calculation.seasonalityLabel]);
     push(['Премия после сезонности', calculation.premiumAfterSeasonality]);
     push(['Мультипликатор KPI', calculation.kpi.labelText]);
@@ -428,7 +429,7 @@ class ExportService {
         if (!line.indicatorId) return;
         push([
           Utils.formatDate(day.day, calculation.month, calculation.year),
-          line.block === BLOCKS.SALES ? 'Продажи' : 'Операторский',
+          line.block === BLOCKS.ADMIN ? 'Административный' : line.block === BLOCKS.SALES ? 'Продажи' : 'Операторский',
           line.indicatorName,
           line.value,
           line.rateType === RATE_TYPES.PERCENT
@@ -515,7 +516,7 @@ class ExportService {
         detailRows.push(`
           <tr>
             <td>${Utils.formatDate(day.day, calculation.month, calculation.year)}</td>
-            <td>${line.block === BLOCKS.SALES ? 'Продажи' : 'Операторский'}</td>
+            <td>${line.block === BLOCKS.ADMIN ? 'Административный' : line.block === BLOCKS.SALES ? 'Продажи' : 'Операторский'}</td>
             <td>${Utils.escapeHtml(line.indicatorName)}</td>
             <td class="num">${Utils.formatNumber(line.value)}</td>
             <td class="num">${Utils.formatRate(line.rate, line.rateType)}</td>

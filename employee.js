@@ -24,6 +24,7 @@ class DayLineItem {
      * @type {number}
      */
     this.value = Utils.toNumber(data.value, 0);
+    this.paymentMethod = ['card', 'qr_credit', 'cash'].includes(data.paymentMethod) ? data.paymentMethod : 'qr_credit';
   }
 
   /**
@@ -35,7 +36,8 @@ class DayLineItem {
       id: this.id,
       block: this.block,
       indicatorId: this.indicatorId,
-      value: this.value
+      value: this.value,
+      paymentMethod: this.paymentMethod
     };
   }
 

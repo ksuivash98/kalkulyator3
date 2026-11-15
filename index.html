@@ -146,21 +146,29 @@
         <div class="focus-block">
           <div class="focus-block__head">
             <h3>KPI 3. Фокусные KPI операторов</h3>
+            <details><summary>Показатели по операторам и границы множителя</summary>
+              <p>Сумма корректировок ограничена: −30% … +40%. Применяется к экономическому и операторскому бонусу.</p>
+              <table><thead><tr><th>KPI</th><th>Т2</th><th>МФ</th><th>БЛН</th><th>МТС</th></tr></thead><tbody>
+              <tr><th>1</th><td>ШПД Т2</td><td>Абон</td><td>Актив 1–15</td><td>tNPS</td></tr>
+              <tr><th>2</th><td>ЦС × Подписки</td><td>ФТП</td><td>Выручка 1М</td><td>ФТП 1 × ФТП 2</td></tr>
+              <tr><th>3</th><td>MNP × ПА</td><td>MNP</td><td>MNP</td><td>Абон × MNP</td></tr>
+              </tbody></table>
+            </details>
             <p class="panel__hint">Штраф один на весь блок — по числу невыполненных KPI (&lt;100%)</p>
           </div>
           <div class="kpi-inputs kpi-inputs--focus">
             <label class="field" id="focus-field-spd">
-              <span class="field__label">ШПД (%)</span>
+              <span class="field__label">Фокусный KPI 1 (%)</span>
               <input type="number" id="kpi-focus-spd" min="0" step="0.1" placeholder="100"/>
               <span class="focus-status" id="focus-status-spd">🟡</span>
             </label>
             <label class="field" id="focus-field-cs">
-              <span class="field__label">ЦС и Подписки (%)</span>
+              <span class="field__label">Фокусный KPI 2 (%)</span>
               <input type="number" id="kpi-focus-cs" min="0" step="0.1" placeholder="100"/>
               <span class="focus-status" id="focus-status-cs">🟡</span>
             </label>
             <label class="field" id="focus-field-mnp">
-              <span class="field__label">MNP и ПА (%)</span>
+              <span class="field__label">Фокусный KPI 3 (%)</span>
               <input type="number" id="kpi-focus-mnp" min="0" step="0.1" placeholder="100"/>
               <span class="focus-status" id="focus-status-mnp">🟡</span>
             </label>
@@ -210,7 +218,7 @@
               <strong id="kpi-premium-after">0,00 ₽</strong>
             </div>
             <div class="kpi-summary__payout">
-              <span>Итого к выплате</span>
+              <span>Итого к выплате (включая административный бонус)</span>
               <strong id="kpi-payout">0,00 ₽</strong>
             </div>
           </div>
@@ -279,6 +287,7 @@
           <div class="total-card"><span>Средняя премия / день</span><strong id="total-avg-premium">0,00 ₽</strong></div>
         </div>
 
+        <p>Административный бонус без сезонности и KPI: <strong id="total-admin">0,00 ₽</strong></p>
         <div class="payout-breakdown" aria-label="Расчёт к выплате">
           <div class="payout-row">
             <span>Оклад</span>
@@ -305,7 +314,7 @@
             <strong id="total-final-premium">0,00 ₽</strong>
           </div>
           <div class="payout-row payout-row--total">
-            <span>Итого к выплате</span>
+            <span>Итого к выплате (включая административный бонус)</span>
             <strong id="total-payout">0,00 ₽</strong>
           </div>
         </div>
@@ -484,6 +493,11 @@
         </section>
 
         <section class="block-section">
+          <div class="block-section__head"><h3>Административный блок</h3><button type="button" id="btn-add-admin-line" class="btn btn--primary btn--sm">➕ Добавить бонус / штраф</button></div>
+          <p>Не применяются сезонность и KPI. Количество: 1 за условие; для двойного штрафа ВМР — 2.</p>
+          <div id="admin-lines" class="lines-list"></div>
+        </section>
+        <section class="block-section">
           <div class="block-section__head">
             <h3>Операторский</h3>
             <button type="button" id="btn-add-operator-line" class="btn btn--primary btn--sm">➕ Добавить показатель</button>
@@ -505,13 +519,13 @@
 
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="data.js?v=20260819b"></script>
-  <script src="utils.js?v=20260819b"></script>
-  <script src="storage.js?v=20260819b"></script>
-  <script src="employee.js?v=20260819b"></script>
-  <script src="calculator.js?v=20260819b"></script>
-  <script src="export.js?v=20260819b"></script>
-  <script src="script.js?v=20260819b"></script>
-  <script src="ui.js?v=20260819b"></script>
+  <script src="data.js?v=20261115"></script>
+  <script src="utils.js?v=20261115"></script>
+  <script src="storage.js?v=20261115"></script>
+  <script src="employee.js?v=20261115"></script>
+  <script src="calculator.js?v=20261115"></script>
+  <script src="export.js?v=20261115"></script>
+  <script src="script.js?v=20261115"></script>
+  <script src="ui.js?v=20261115"></script>
 </body>
 </html>

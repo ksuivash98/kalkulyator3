@@ -1,0 +1,35 @@
+const { readFileSync } = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const context = vm.createContext({ console, assert, crypto: require('node:crypto').webcrypto });
+for (const file of ['data.js', 'utils.js', 'employee.js', 'calculator.js']) vm.runInContext(readFileSync(file, 'utf8'), context);
+vm.runInContext(`
+const line = (id, value=1, block=BLOCKS.OPERATOR, paymentMethod='qr_credit') => new DayLineItem({indicatorId:id,value,block,paymentMethod});
+for (const [category,rate] of [['standard',100],['dota1',100],['dota2',100]]) assert.equal(SalaryCalculator.calculateLine(line('kaspersky',2,BLOCKS.SALES),category).accrual,rate*2);
+for (const [method,amount] of [['card',75],['qr_credit',100],['cash',125]]) assert.equal(SalaryCalculator.calculateLine(line('smart_standart_tablet',10000,BLOCKS.SALES,method),'standard').accrual,amount);
+assert.equal(SalaryCalculator.calculateLine(line('gold_abon_combo_sim_12m'),'standard').accrual,350);
+assert.equal(SalaryCalculator.calculateLine(line('abon_24m'),'dota2').accrual,600);
+assert.equal(SalaryCalculator.calculateLine(line('broadband_tv'),'standard').accrual,200);
+for (const [year,month,expected] of [[2026,11,100],[2026,10,0],[2027,11,0]]) assert.equal(SalaryCalculator.calculateLine(line('credit_application_nov26',1,BLOCKS.SALES),'standard',{year,month}).accrual,expected);
+assert.equal(DataService.resolveKpiAdjustment('credits',{credits:100,applicationsPlanMet:true}),5);
+assert.equal(DataService.resolveKpiAdjustment('credits',{credits:85}),0);
+assert.equal(DataService.resolveKpiAdjustment('credits',{credits:70}),-2.5);
+assert.equal(DataService.resolveKpiAdjustment('credits',{credits:69,applicationsPlanMet:true}),-2.5);
+assert.equal(DataService.resolveKpiAdjustment('credits',{credits:69,applicationsPlanMet:false}),-5);
+assert.equal(DataService.resolveKpiAdjustment('accessories',{accessories:70}),-5);
+assert.equal(DataService.resolveKpiAdjustment('insurance',{insurance:69}),-10);
+const low = {sim:0,conversion:0,focusSpd:0,focusCs:0,focusMnp:0,credits:0,accessories:0,insurance:0};
+assert.equal(DataService.calculateKpiMultiplier(low,1000).factor,0.7);
+const high={...Object.fromEntries(Object.keys(low).map(k=>[k,120])),applicationsPlanMet:true};
+assert.equal(DataService.calculateKpiMultiplier(high,1000).factor,1.4);
+assert.equal(DataService.calculateKpiMultiplier(high,1000).analytics.maxPremium,1400);
+for (const month of [1,11]) {
+ const period=new EmployeePeriod(2026,month); period.kpi=low;
+ period.getDay(1).items.push(line('recommend_manager',1,BLOCKS.ADMIN));
+ assert.equal(SalaryCalculator.calculatePeriod(period).payout,5000);
+ period.getDay(1).items.push(line('vmr_penalty',2,BLOCKS.ADMIN));
+ assert.equal(SalaryCalculator.calculatePeriod(period).payout,1000);
+}
+assert.equal(DayLineItem.fromJSON(line('smart_green',10,BLOCKS.SALES,'cash').toJSON()).paymentMethod,'cash');
+console.log('Salary rules: all assertions passed');
+`, context);

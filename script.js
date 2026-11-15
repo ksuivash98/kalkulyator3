@@ -293,6 +293,7 @@ class UIController {
     this.bindEvent('#day-hours', 'input', (e) => this.onDayFieldChange('hours', e.target.value));
     this.bindEvent('#day-comment', 'input', (e) => this.onDayFieldChange('comment', e.target.value));
     this.bindEvent('#btn-add-sales-line', 'click', () => this.addDayLine(BLOCKS.SALES));
+    this.bindEvent('#btn-add-admin-line', 'click', () => this.addDayLine(BLOCKS.ADMIN));
     this.bindEvent('#btn-add-operator-line', 'click', () => this.addDayLine(BLOCKS.OPERATOR));
 
     // FAB меню
@@ -481,7 +482,7 @@ class UIController {
     if (!day) return;
     const defaults = block === BLOCKS.SALES
       ? DataService.getEconomicIndicators()[0]
-      : DataService.getOperatorIndicators()[0];
+      : block === BLOCKS.ADMIN ? administrativeIndicators[0] : DataService.getOperatorIndicators()[0];
     day.addItem(block, defaults ? defaults.id : '', 0);
     this.recalculateAndRefresh();
   }
@@ -532,7 +533,7 @@ class UIController {
   isEditingDayLineField() {
     const active = document.activeElement;
     if (!active || !active.closest) return false;
-    return Boolean(active.closest('#sales-lines, #operator-lines'));
+    return Boolean(active.closest('#sales-lines, #operator-lines, #admin-lines'));
   }
 
   /* ========================================================================
@@ -634,8 +635,6 @@ class UIController {
 
   renderAll() {
     this._suppressSave = true;
-    this.syncPeriodFromInputs();
-    this.syncKpiFromInputs();
     this.calculation = this.activePeriod
       ? SalaryCalculator.calculatePeriod(this.activePeriod)
       : null;
@@ -1059,6 +1058,7 @@ class UIController {
       '#total-hours': Utils.formatNumber(c.workHours),
       '#total-avg-hours': Utils.formatNumber(c.avgHoursPerDay),
       '#total-salary': Utils.formatMoney(c.salary),
+      '#total-admin': Utils.formatMoney(c.administrativePremium),
       '#total-sales': Utils.formatMoney(c.totalSales),
       '#total-premium': Utils.formatMoney(c.totalPremium),
       '#total-seasonality': c.seasonalityLabel,
@@ -1256,6 +1256,7 @@ class UIController {
     } else {
       this.renderLinesList(BLOCKS.SALES, '#sales-lines', DataService.getEconomicIndicators());
       this.renderLinesList(BLOCKS.OPERATOR, '#operator-lines', DataService.getOperatorIndicators());
+      this.renderLinesList(BLOCKS.ADMIN, '#admin-lines', administrativeIndicators);
     }
   }
 
@@ -1266,13 +1267,13 @@ class UIController {
     const day = this.getSelectedDayData();
     if (!day) return;
 
-    Utils.$$('#sales-lines .line-row, #operator-lines .line-row').forEach((row) => {
+    Utils.$$('#sales-lines .line-row, #operator-lines .line-row, #admin-lines .line-row').forEach((row) => {
       const itemId = row.dataset.itemId;
       if (!itemId) return;
       const item = day.items.find((i) => i.id === itemId);
       if (!item) return;
 
-      const calc = SalaryCalculator.calculateLine(item, this.getActiveCategoryKey());
+      const calc = SalaryCalculator.calculateLine(item, this.getActiveCategoryKey(), this.activePeriod);
       const rateEl = row.querySelector('[data-role="rate"]');
       const accrualEl = row.querySelector('[data-role="accrual"]');
       const labelEl = row.querySelector('[data-role="value-label"]');
@@ -1308,7 +1309,7 @@ class UIController {
     }
 
     items.forEach((item) => {
-      const calc = SalaryCalculator.calculateLine(item, this.getActiveCategoryKey());
+      const calc = SalaryCalculator.calculateLine(item, this.getActiveCategoryKey(), this.activePeriod);
       const indicator = DataService.getIndicator(block, item.indicatorId);
       const valueLabel = indicator && indicator.rateType === RATE_TYPES.FIXED
         ? 'Количество'
@@ -1334,6 +1335,16 @@ class UIController {
         <button type="button" class="btn btn--ghost btn--icon" data-role="remove" title="Удалить строку">🗑</button>
       `;
 
+      if (block === BLOCKS.SALES) {
+        const label = document.createElement('label');
+        label.textContent = 'Оплата товаров';
+        const payment = document.createElement('select');
+        payment.dataset.role = 'payment';
+        [['qr_credit', 'QR / кредит ×1'], ['card', 'Карта ×0,75'], ['cash', 'Наличные ×1,25']].forEach(([value, text]) => payment.add(new Option(text, value, false, item.paymentMethod === value)));
+        payment.addEventListener('change', () => { item.paymentMethod = payment.value; this.recalculateAndRefresh(); });
+        label.appendChild(payment);
+        row.appendChild(label);
+      }
       const select = row.querySelector('[data-role="indicator"]');
       indicators.forEach((ind) => {
         const opt = document.createElement('option');

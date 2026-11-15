@@ -17,7 +17,7 @@ class SalaryCalculator {
    * @param {string} categoryKey
    * @returns {{accrual: number, rate: number, rateType: string, indicatorName: string, salesAmount: number}}
    */
-  static calculateLine(item, categoryKey) {
+  static calculateLine(item, categoryKey, period = null) {
     const indicator = DataService.getIndicator(item.block, item.indicatorId);
     if (!indicator) {
       return {
@@ -30,6 +30,7 @@ class SalaryCalculator {
     }
 
     const value = Utils.toNumber(item.value, 0);
+    if (item.indicatorId === 'credit_application_nov26' && (!period || period.year !== 2026 || period.month !== 11)) return { accrual: 0, rate: 0, rateType: indicator.rateType, indicatorName: indicator.name, salesAmount: 0 };
     const rate = DataService.getIndicatorRateByCategory(indicator, categoryKey);
     let accrual = 0;
     let salesAmount = 0;
@@ -45,6 +46,8 @@ class SalaryCalculator {
       }
     }
 
+    const paymentEligible = ['smart_red_apple_obmen', 'smart_standart_tablet', 'smart_green', 'smart_sellout_dead', 'feature_phones', 'trade_in', 'buyout'].includes(item.indicatorId);
+    if (paymentEligible) accrual *= ({ card: 0.75, qr_credit: 1, cash: 1.25 })[item.paymentMethod] || 1;
     return {
       accrual: Utils.roundMoney(accrual),
       rate,
@@ -95,25 +98,28 @@ class SalaryCalculator {
    * @param {string} categoryKey
    * @returns {Object}
    */
-  static calculateDay(day, hourlyRate, categoryKey) {
+  static calculateDay(day, hourlyRate, categoryKey, period = null) {
     const hours = Utils.toNumber(day.hours, 0);
     const daySalary = SalaryCalculator.calcSalary(hours, hourlyRate);
 
     let salesTotal = 0;
     let salesPremium = 0;
     let operatorPremium = 0;
+    let administrativePremium = 0;
     let salesCount = 0;
     let operatorCount = 0;
     const indicatorStats = {};
 
     const lines = day.items.map((item) => {
-      const calc = SalaryCalculator.calculateLine(item, categoryKey);
+      const calc = SalaryCalculator.calculateLine(item, categoryKey, period);
       if (item.block === BLOCKS.SALES) {
         salesTotal += calc.salesAmount;
         salesPremium += calc.accrual;
         if (item.indicatorId && item.value !== 0) {
           salesCount += 1;
         }
+      } else if (item.block === BLOCKS.ADMIN) {
+        administrativePremium += calc.accrual;
       } else {
         operatorPremium += calc.accrual;
         if (item.indicatorId && item.value !== 0) {
@@ -143,7 +149,7 @@ class SalaryCalculator {
       };
     });
 
-    const premium = Utils.roundMoney(salesPremium + operatorPremium);
+    const premium = Utils.roundMoney(salesPremium + operatorPremium + administrativePremium);
     const total = Utils.roundMoney(daySalary + premium);
     const hasData = day.hasData();
 
@@ -156,6 +162,7 @@ class SalaryCalculator {
       salesTotal: Utils.roundMoney(salesTotal),
       salesPremium: Utils.roundMoney(salesPremium),
       operatorPremium: Utils.roundMoney(operatorPremium),
+      administrativePremium: Utils.roundMoney(administrativePremium),
       premium,
       total,
       salesCount,
@@ -186,6 +193,7 @@ class SalaryCalculator {
     let totalPremium = 0;
     let totalSalesPremium = 0;
     let totalOperatorPremium = 0;
+    let administrativePremium = 0;
     let totalDaySalary = 0;
     let salesCount = 0;
     let operatorCount = 0;
@@ -194,7 +202,7 @@ class SalaryCalculator {
 
     for (let d = 1; d <= period.daysInMonth; d += 1) {
       const day = period.getDay(d);
-      const dayResult = SalaryCalculator.calculateDay(day, hourlyRate, categoryKey);
+      const dayResult = SalaryCalculator.calculateDay(day, hourlyRate, categoryKey, period);
       days.push(dayResult);
 
       if (dayResult.hasData) {
@@ -205,6 +213,7 @@ class SalaryCalculator {
       totalPremium += dayResult.premium;
       totalSalesPremium += dayResult.salesPremium;
       totalOperatorPremium += dayResult.operatorPremium;
+      administrativePremium += dayResult.administrativePremium;
       totalDaySalary += dayResult.daySalary;
       salesCount += dayResult.salesCount;
       operatorCount += dayResult.operatorCount;
@@ -236,7 +245,7 @@ class SalaryCalculator {
     // 2) totalPremium — премия до сезонности
     // 3) Сезонность: янв–июнь +10% к премии, июл–дек −10% к премии
     const seasonalityApplied = DataService.applySeasonalityToPremium(
-      totalPremium,
+      totalPremium - administrativePremium,
       period.month
     );
     const seasonalityPercent = seasonalityApplied.percent;
@@ -251,12 +260,12 @@ class SalaryCalculator {
       premiumAfterSeasonality
     );
     const finalPremium = Utils.roundMoney(
-      premiumAfterSeasonality * kpiResult.factor
+      premiumAfterSeasonality * kpiResult.factor + administrativePremium
     );
 
     // 5) Итоговая зарплата = оклад (без сезонности) + финальная премия
     const payout = Utils.roundMoney(salary + finalPremium);
-    const maxPayout = Utils.roundMoney(salary + kpiResult.analytics.maxPremium);
+    const maxPayout = Utils.roundMoney(salary + kpiResult.analytics.maxPremium + administrativePremium);
     const payoutGap = Utils.roundMoney(maxPayout - payout);
 
     /** @deprecated alias: премия после сезонности (до KPI) */
@@ -353,6 +362,7 @@ class SalaryCalculator {
           ...kpiResult.analytics,
           seasonalityEffect,
           premiumBeforeKpi: premiumAfterSeasonality,
+          administrativePremium,
           finalPremium,
           salary,
           payout,
@@ -361,6 +371,7 @@ class SalaryCalculator {
         }
       },
       /** Премия после KPI (финальная бонусная часть) */
+      administrativePremium,
       finalPremium,
       seasonalityEffect,
       maxPayout,
@@ -384,6 +395,7 @@ class SalaryCalculator {
         totalPremium,
         premiumAfterSeasonality,
         adjustedPremium,
+        administrativePremium,
         finalPremium,
         kpiTotalAdjustment: kpiResult.totalAdjustment,
         kpiLabel: kpiResult.labelText,

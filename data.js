@@ -52,7 +52,8 @@ const RATE_TYPES = Object.freeze({
 /** Блоки показателей */
 const BLOCKS = Object.freeze({
   SALES: 'sales',
-  OPERATOR: 'operator'
+  OPERATOR: 'operator',
+  ADMIN: 'admin'
 });
 
 /** Названия месяцев (1–12) */
@@ -196,14 +197,14 @@ const kpiMultipliers = Object.freeze({
     flagLabel: 'План по заявкам выполнен',
     ranges: Object.freeze([
       Object.freeze({ min: 120, adjustment: 10 }),
-      Object.freeze({ min: 100, adjustment: 0 }),
-      Object.freeze({ min: 85, adjustment: -2.5 }),
-      Object.freeze({ min: 70, adjustment: -5 })
+      Object.freeze({ min: 100, adjustment: 5 }),
+      Object.freeze({ min: 85, adjustment: 0 }),
+      Object.freeze({ min: 70, adjustment: -2.5 })
     ]),
     /** <70% и план по заявкам не выполнен */
-    below70PlanFailedAdjustment: -10,
+    below70PlanFailedAdjustment: -5,
     /** <70% и план по заявкам выполнен */
-    below70PlanMetAdjustment: -5
+    below70PlanMetAdjustment: -2.5
   }),
   accessories: Object.freeze({
     id: 'accessories',
@@ -216,8 +217,8 @@ const kpiMultipliers = Object.freeze({
       Object.freeze({ min: 120, adjustment: 10 }),
       Object.freeze({ min: 100, adjustment: 5 }),
       Object.freeze({ min: 85, adjustment: 0 }),
-      Object.freeze({ min: 70, adjustment: -10 }),
-      Object.freeze({ min: Number.NEGATIVE_INFINITY, adjustment: -20 })
+      Object.freeze({ min: 70, adjustment: -5 }),
+      Object.freeze({ min: Number.NEGATIVE_INFINITY, adjustment: -10 })
     ])
   }),
   insurance: Object.freeze({
@@ -230,8 +231,8 @@ const kpiMultipliers = Object.freeze({
     ranges: Object.freeze([
       Object.freeze({ min: 100, adjustment: 5 }),
       Object.freeze({ min: 85, adjustment: 0 }),
-      Object.freeze({ min: 70, adjustment: -10 }),
-      Object.freeze({ min: Number.NEGATIVE_INFINITY, adjustment: -20 })
+      Object.freeze({ min: 70, adjustment: -5 }),
+      Object.freeze({ min: Number.NEGATIVE_INFINITY, adjustment: -10 })
     ])
   })
 });
@@ -304,6 +305,7 @@ const DEFAULT_CITY_ID = 'berezniki';
  * @type {ReadonlyArray<{id: string, name: string, block: string, rateType: string, rates: Object}>}
  */
 const economicIndicators = Object.freeze([
+  Object.freeze({ id: 'credit_application_nov26', name: 'Заявка на кредит / рассрочку / спецрассрочку Халва (ноябрь 2026)', block: BLOCKS.SALES, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 100, dota1: 125, dota2: 150 }) }),
   Object.freeze({
     id: 'smart_red_apple_obmen',
     name: 'Смартфоны категории Red, Apple и по акции «Обмен минут»',
@@ -376,10 +378,10 @@ const economicIndicators = Object.freeze([
   }),
   Object.freeze({
     id: 'kaspersky',
-    name: 'Подписка на Антивирус Kaspersky 300 руб',
+    name: 'Подписка на Антивирус Kaspersky (299 руб, 1 месяц бесплатно)',
     block: BLOCKS.SALES,
-    rateType: RATE_TYPES.PERCENT,
-    rates: Object.freeze({ standard: 0.30, dota1: 0.35, dota2: 0.40 })
+    rateType: RATE_TYPES.FIXED,
+    rates: Object.freeze({ standard: 100, dota1: 100, dota2: 100 })
   }),
   Object.freeze({
     id: 'insurance_mmb',
@@ -422,6 +424,10 @@ const economicIndicators = Object.freeze([
  * @type {ReadonlyArray<{id: string, name: string, block: string, rateType: string, rates: Object}>}
  */
 const operatorIndicators = Object.freeze([
+  Object.freeze({ id: 'abon_24m', name: 'Абон 24 мес.', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 400, dota1: 500, dota2: 600 }) }),
+  Object.freeze({ id: 'broadband_tv_application', name: 'Заявка на 1 услугу ШПД или ТВ', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 200, dota1: 250, dota2: 300 }) }),
+  Object.freeze({ id: 'clean_number', name: 'Подключение платного «Чистого номера»', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 40, dota1: 50, dota2: 60 }) }),
+  Object.freeze({ id: 'mixx', name: 'Подключение Абонемента Mixx (3/6/12 мес.)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 80, dota1: 100, dota2: 120 }) }),
   Object.freeze({ id: 'extra_sim', name: 'Экстра-Sim', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: -40, dota1: -40, dota2: -40 }) }),
   Object.freeze({ id: 'extra_sim_overlimit', name: 'Экстра-Sim (при превышении лимита)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: -80, dota1: -80, dota2: -80 }) }),
   Object.freeze({ id: 'base_tp', name: 'Базовые ТП', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 40, dota1: 50, dota2: 60 }) }),
@@ -432,12 +438,12 @@ const operatorIndicators = Object.freeze([
   Object.freeze({ id: 'premium_tp', name: 'Premium ТП', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 350, dota1: 450, dota2: 550 }) }),
   Object.freeze({ id: 'promo_sim_booster', name: 'Промо Sim от оператора / Акция «Бустер»', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 40, dota1: 50, dota2: 60 }) }),
   Object.freeze({ id: 'abon_sim_3m', name: 'Абон SIM 3 мес. (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 150, dota1: 200, dota2: 250 }) }),
-  Object.freeze({ id: 'gold_combo_sim_3m', name: 'Золото / Комбо SIM 3 мес. (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 250, dota1: 300, dota2: 350 }) }),
-  Object.freeze({ id: 'gold_abon_combo_sim_6m', name: 'Золото / Абон / Комбо SIM 6 мес. (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 350, dota1: 450, dota2: 550 }) }),
-  Object.freeze({ id: 'gold_abon_combo_sim_12m', name: 'Золото / Абон / Комбо SIM 12 мес. (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 450, dota1: 550, dota2: 650 }) }),
+  Object.freeze({ id: 'gold_combo_sim_3m', name: 'Золото / Комбо SIM 3 мес. / Абон МТС для устройств 12 мес.', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 250, dota1: 300, dota2: 350 }) }),
+  Object.freeze({ id: 'gold_abon_combo_sim_6m', name: 'Золото / Абон / Комбо SIM 6 мес. / Абон МТС для устройств 36 мес.', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 350, dota1: 450, dota2: 550 }) }),
+  Object.freeze({ id: 'gold_abon_combo_sim_12m', name: 'Золото / Абон / Комбо SIM 12 мес. (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 350, dota1: 450, dota2: 550 }) }),
   Object.freeze({ id: 'legal_entity', name: 'Подключение юр.лица (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 300, dota1: 350, dota2: 400 }) }),
-  Object.freeze({ id: 'mnp', name: 'MNP (доп. к оплате за ТП Sim)', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 250, dota1: 300, dota2: 350 }) }),
-  Object.freeze({ id: 'broadband_tv', name: 'Подключение 1 услуги ШПД или ТВ', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 400, dota1: 500, dota2: 600 }) }),
+  Object.freeze({ id: 'mnp', name: 'MNP (доп. к оплате за ТП Sim), кроме МТС', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 250, dota1: 300, dota2: 350 }) }),
+  Object.freeze({ id: 'broadband_tv', name: 'Подключение 1 услуги ШПД или ТВ', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 200, dota1: 250, dota2: 300 }) }),
   Object.freeze({ id: 'service_ops', name: 'Сервисные операции Т2 и МТС', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 10, dota1: 12.5, dota2: 15 }) }),
   Object.freeze({ id: 'yandex_adapter', name: 'Яндекс адаптер', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 40, dota1: 50, dota2: 60 }) }),
   Object.freeze({ id: 'installment_card', name: 'Карта рассрочки без продажи по КР', block: BLOCKS.OPERATOR, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 500, dota1: 500, dota2: 500 }) }),
@@ -562,7 +568,7 @@ class DataService {
    * @returns {ReadonlyArray<{id: string, name: string, rates: Object, rateType: string}>}
    */
   static getOperatorIndicators() {
-    return operatorIndicators;
+    return operatorIndicators.filter(item => item.id !== 'service_ops');
   }
 
   /**
@@ -581,6 +587,7 @@ class DataService {
    * @returns {{id: string, name: string, rates: Object, rateType: string}|null}
    */
   static getIndicator(block, indicatorId) {
+    if (block === BLOCKS.ADMIN) return administrativeIndicators.find(item => item.id === indicatorId) || null;
     if (block === BLOCKS.SALES) {
       return DataService.getEconomicIndicator(indicatorId);
     }
@@ -1142,7 +1149,7 @@ class DataService {
     });
 
     const totalAdjustment = Utils.roundMoney(
-      items.reduce((sum, item) => sum + item.adjustment, 0)
+      Math.max(-30, Math.min(40, items.reduce((sum, item) => sum + item.adjustment, 0)))
     );
 
     const opportunities = rules.map((rule) =>
@@ -1159,7 +1166,7 @@ class DataService {
       )
     );
     const maxTotalAdjustment = Utils.roundMoney(
-      rules.reduce((sum, rule) => sum + DataService.getMaxKpiAdjustment(rule), 0)
+      Math.min(40, rules.reduce((sum, rule) => sum + DataService.getMaxKpiAdjustment(rule), 0))
     );
     const maxPremium = Utils.roundMoney(
       premiumAfterSeasonality * (1 + maxTotalAdjustment / 100)
@@ -1187,3 +1194,17 @@ class DataService {
     };
   }
 }
+
+const administrativeIndicators = Object.freeze([
+  Object.freeze({ id: 'vmr_bonus', name: 'ВМР: оценка за месяц ≥90% (МегаФон =100%)', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 2000, dota1: 2500, dota2: 3000 }) }),
+  Object.freeze({ id: 'vmr_penalty', name: 'ВМР: нецелевая оценка <80% (МегаФон <90%); укажите 2 при двух месяцах подряд', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: -2000, dota1: -2500, dota2: -3000 }) }),
+  Object.freeze({ id: 'recommend_manager', name: 'Рекомендация руководителя', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 5000, dota1: 5000, dota2: 5000 }) }),
+  Object.freeze({ id: 'recommend_ptt', name: 'Рекомендация ПТТ', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 3000, dota1: 3000, dota2: 3000 }) }),
+  Object.freeze({ id: 'salon_open', name: 'Подготовка к открытию нового салона', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 1000, dota1: 1000, dota2: 1000 }) }),
+  Object.freeze({ id: 'vacation_cover', name: 'Отзыв из отпуска при целевом ФО', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 1000, dota1: 1000, dota2: 1000 }) }),
+  Object.freeze({ id: 'senior_checklist', name: 'Старший продавец: чек-лист ДОВ ≥90%', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 1000, dota1: 1000, dota2: 1000 }) }),
+  Object.freeze({ id: 'senior_sim', name: 'Старший продавец: план SIM 1 и 2 декады', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 1000, dota1: 1000, dota2: 1000 }) }),
+  Object.freeze({ id: 'senior_services', name: 'Старший продавец: план услуг', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 2000, dota1: 2000, dota2: 2000 }) }),
+  Object.freeze({ id: 'senior_mnp', name: 'Старший продавец: план MNP', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 2000, dota1: 2000, dota2: 2000 }) }),
+  Object.freeze({ id: 'senior_partner', name: 'Старший продавец: дополнительный KPI партнёра', block: BLOCKS.ADMIN, rateType: RATE_TYPES.FIXED, rates: Object.freeze({ standard: 2000, dota1: 2000, dota2: 2000 }) })
+]);
