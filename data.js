@@ -1211,8 +1211,6 @@ const administrativeIndicators = Object.freeze([
 
 // Defaults match the supplied workbook; settings are saved per employee/month.
 const REALISTIC_PLAN_FIELDS = Object.freeze([
-  ['hours', 'Часов за месяц', null, 'Основные данные'],
-  ['shifts', 'Смен за месяц', null, 'Основные данные'],
   ['completedShifts', 'Уже отработано смен (пусто — по дневнику)', null, 'Основные данные'],
   ['multiplier', 'Мультипликатор плана (0,7–1,4)', 1, 'Основные данные'],
   ['admin', 'Административный бонус за месяц, ₽', 0, 'Основные данные'],

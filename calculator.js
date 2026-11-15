@@ -197,7 +197,7 @@ class SalaryCalculator {
 
   static calculatePlanProgress(period, plan, calculation = SalaryCalculator.calculatePeriod(period)) {
     const config = period.salaryGoal.realistic;
-    const plannedShifts = config.shifts ?? period.workDays;
+    const plannedShifts = period.workDays;
     const recordedShifts = Object.values(period.days).filter(day => day.hours > 0 || day.items.some(item => item.indicatorId && item.value > 0)).length;
     const completedShifts = config.completedShifts ?? recordedShifts;
     const remainingShifts = Math.max(0, plannedShifts - completedShifts);
@@ -224,11 +224,11 @@ class SalaryCalculator {
   static calculateRealisticPlan(period) {
     const goal = period.salaryGoal;
     const config = Object.fromEntries(REALISTIC_PLAN_FIELDS.map(([key, , fallback]) => [key, goal.realistic?.[key] ?? fallback]));
-    const hours = config.hours ?? period.workHours;
-    const shifts = config.shifts ?? period.workDays;
+    const hours = period.workHours;
+    const shifts = period.workDays;
     const errors = [];
     if (!(goal.desired > 0)) errors.push('Укажите желаемую зарплату.');
-    if (!(hours > 0) || !(shifts > 0) || !Number.isInteger(shifts)) errors.push('Укажите часы и целое число смен больше нуля.');
+    if (!(hours > 0) || !(shifts > 0) || !Number.isInteger(shifts)) errors.push('Заполните часы и целое число рабочих дней больше нуля в блоке «Рабочее время».');
     if (!(config.multiplier >= 0.7 && config.multiplier <= 1.4)) errors.push('Мультипликатор должен быть от 0,7 до 1,4.');
     const shares = ['sim', 'accessories', 'smartphones', 'services', 'mnp'];
     if (Math.abs(shares.reduce((sum, key) => sum + config[key + 'Share'], 0) - 100) > 0.000001) errors.push('Сумма долей бонуса должна быть 100%.');

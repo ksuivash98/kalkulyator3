@@ -105,6 +105,11 @@
         </div>
         <label class="field"><span class="field__label">Как составить план</span><select id="goal-mode"><option value="auto">Автоматически — реалистичный план как в Excel</option><option value="manual">Вручную — свой набор показателей</option></select></label>
         <div id="goal-auto">
+          <p class="panel__hint">Дни и часы автоматически берутся из блока «Рабочее время» выбранного сотрудника и месяца. Измените их там — план пересчитается.</p>
+          <div class="form-grid form-grid--2">
+            <label class="field"><span class="field__label">Рабочих дней — из рабочего времени</span><input id="goal-linked-days" type="number" readonly/></label>
+            <label class="field"><span class="field__label">Количество часов — из рабочего времени</span><input id="goal-linked-hours" type="number" readonly/></label>
+          </div>
           <div id="goal-auto-main" class="form-grid form-grid--2"></div>
           <details><summary>Настройки объёмов, распределения и ставок</summary><div id="goal-auto-settings"></div><p class="panel__hint">Пустая ставка берётся из категории выбранного города. Процентные ставки вводятся в процентах. Пример: 10 = 10%. Кредитные заявки оплачиваются только в ноябре 2026.</p></details>
           <p id="goal-auto-status" role="status"></p>
@@ -552,13 +557,13 @@
 
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="data.js?v=20261115progress"></script>
-  <script src="utils.js?v=20261115progress"></script>
-  <script src="storage.js?v=20261115progress"></script>
-  <script src="employee.js?v=20261115progress"></script>
-  <script src="calculator.js?v=20261115progress"></script>
-  <script src="export.js?v=20261115progress"></script>
-  <script src="script.js?v=20261115progress"></script>
-  <script src="ui.js?v=20261115progress"></script>
+  <script src="data.js?v=20261115linked"></script>
+  <script src="utils.js?v=20261115linked"></script>
+  <script src="storage.js?v=20261115linked"></script>
+  <script src="employee.js?v=20261115linked"></script>
+  <script src="calculator.js?v=20261115linked"></script>
+  <script src="export.js?v=20261115linked"></script>
+  <script src="script.js?v=20261115linked"></script>
+  <script src="ui.js?v=20261115linked"></script>
 </body>
 </html>

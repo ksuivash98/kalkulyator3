@@ -254,7 +254,7 @@ class UIController {
       const rate = e.target.dataset.planRate;
       if (!field && !rate) return;
       const goal = this.activePeriod.salaryGoal;
-      if (field) goal.realistic[field] = e.target.value === '' && ['hours', 'shifts', 'completedShifts'].includes(field) ? null : Number(e.target.value);
+      if (field) goal.realistic[field] = e.target.value === '' && field === 'completedShifts' ? null : Number(e.target.value);
       if (rate) goal.rates[rate] = e.target.value === '' ? null : Number(e.target.value) / (e.target.dataset.percent === 'true' ? 100 : 1);
       this.renderSalaryGoal(); this.autoSave();
     });
@@ -1080,6 +1080,8 @@ class UIController {
   renderRealisticPlan() {
     const goal = this.activePeriod.salaryGoal;
     const result = SalaryCalculator.calculateRealisticPlan(this.activePeriod);
+    Utils.$('#goal-linked-hours').value = this.activePeriod.workHours;
+    Utils.$('#goal-linked-days').value = this.activePeriod.workDays;
     const main = Utils.$('#goal-auto-main');
     const settings = Utils.$('#goal-auto-settings');
     if (!main.children.length) {
@@ -1111,8 +1113,6 @@ class UIController {
     main.parentElement.querySelectorAll('[data-plan-field]').forEach(input => {
       const key = input.dataset.planField;
       if (document.activeElement !== input) input.value = goal.realistic[key] ?? '';
-      if (key === 'hours') input.placeholder = `Из рабочего времени: ${this.activePeriod.workHours}`;
-      if (key === 'shifts') input.placeholder = `Из рабочих дней: ${this.activePeriod.workDays}`;
     });
     settings.querySelectorAll('[data-plan-rate]').forEach(input => {
       const key = input.dataset.planRate; const scale = input.dataset.percent === 'true' ? 100 : 1;
