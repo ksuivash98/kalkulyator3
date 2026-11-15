@@ -254,7 +254,7 @@ class UIController {
       const rate = e.target.dataset.planRate;
       if (!field && !rate) return;
       const goal = this.activePeriod.salaryGoal;
-      if (field) goal.realistic[field] = e.target.value === '' && ['hours', 'shifts'].includes(field) ? null : Number(e.target.value);
+      if (field) goal.realistic[field] = e.target.value === '' && ['hours', 'shifts', 'completedShifts'].includes(field) ? null : Number(e.target.value);
       if (rate) goal.rates[rate] = e.target.value === '' ? null : Number(e.target.value) / (e.target.dataset.percent === 'true' ? 100 : 1);
       this.renderSalaryGoal(); this.autoSave();
     });
@@ -1123,6 +1123,8 @@ class UIController {
     const totals = Utils.$('#goal-auto-totals'); totals.innerHTML = '';
     Utils.$('#goal-auto-rows').innerHTML = '';
     Utils.setText('#goal-auto-credit', '');
+    Utils.$('#goal-progress-totals').innerHTML = '';
+    Utils.setText('#goal-progress-note', '');
     if (result.errors.length) return;
     [['Оклад', result.salary], ['Нужен торговый бонус', result.neededBonus], ['Премия по плану', result.bonus], ['Прогноз зарплаты', result.projected], ['Не хватает до цели', result.remaining]].forEach(([label, value]) => {
       const card = document.createElement('div'); card.className = 'analytics-card';
@@ -1130,9 +1132,19 @@ class UIController {
       const amount = document.createElement('strong'); amount.textContent = Utils.formatMoney(value);
       card.append(caption, amount); totals.appendChild(card);
     });
-    result.lines.forEach(line => {
+    const progress = SalaryCalculator.calculatePlanProgress(this.activePeriod, result, this.calculation);
+    const progressTotals = Utils.$('#goal-progress-totals');
+    const dailyMoney = value => value === null ? 'Нет оставшихся смен' : Utils.formatMoney(value);
+    [['Осталось смен', String(progress.remainingShifts)], ['Заработано по дневнику', Utils.formatMoney(progress.earned)], ['Осталось до желаемой зарплаты', Utils.formatMoney(progress.salaryRemaining)], ['Нужно зарабатывать в день (смену) до цели', dailyMoney(progress.neededEarningsPerShift)], ['Осталось до прогнозной зарплаты плана', Utils.formatMoney(progress.planSalaryRemaining)], ['Нужно за смену до зарплаты плана', dailyMoney(progress.neededPlanEarningsPerShift)]].forEach(([label, value]) => {
+      const card = document.createElement('div'); card.className = 'analytics-card';
+      const caption = document.createElement('span'); caption.textContent = label;
+      const amount = document.createElement('strong'); amount.textContent = value;
+      card.append(caption, amount); progressTotals.appendChild(card);
+    });
+    Utils.setText('#goal-progress-note', `Отработано смен: ${progress.completedShifts}. Остаток делится на рабочие смены, а не календарные дни. Факт — из дневника; заработок включает оклад только за внесённые часы и фактическую премию с текущими KPI. Общие часы месяца не считаются уже заработанными. Если дневник заполнен не полностью, уточните число отработанных смен. SIM суммируются по всем платным тарифам, остальные строки — по указанному продукту. Нужный заработок за смену включает оклад и премию. Цель может превышать реалистичный план.`);
+    progress.lines.forEach(line => {
       const row = document.createElement('tr');
-      [line.name + (line.capped ? ' — предел' : ''), `${Utils.formatNumber(line.quantity)} ${line.unit}`, `${Utils.formatNumber(line.perShift)} ${line.unit}`, Utils.formatMoney(line.bonus)].forEach(value => { const cell = document.createElement('td'); cell.textContent = value; row.appendChild(cell); });
+      [line.name + (line.capped ? ' — предел' : ''), `${Utils.formatNumber(line.quantity)} ${line.unit}`, `${Utils.formatNumber(line.perShift)} ${line.unit}`, `${Utils.formatNumber(line.actual)} ${line.unit}`, `${Utils.formatNumber(line.remaining)} ${line.unit}`, line.neededPerShift === null ? 'Нет оставшихся смен' : `${Utils.formatNumber(line.neededPerShift)} ${line.unit}`, Utils.formatMoney(line.bonus)].forEach(value => { const cell = document.createElement('td'); cell.textContent = value; row.appendChild(cell); });
       Utils.$('#goal-auto-rows').appendChild(row);
     });
     Utils.setText('#goal-auto-credit', `Кредитный оборот: ${Utils.formatMoney(result.credit)} за месяц / ${Utils.formatMoney(result.creditPerShift)} за смену. Сезонность × мультипликатор: ${Utils.formatNumber(result.factor)}. Объёмы на смену округлены вверх, заявки — до сотых, как в Excel.`);

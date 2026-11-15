@@ -109,7 +109,10 @@
           <details><summary>Настройки объёмов, распределения и ставок</summary><div id="goal-auto-settings"></div><p class="panel__hint">Пустая ставка берётся из категории выбранного города. Процентные ставки вводятся в процентах. Пример: 10 = 10%. Кредитные заявки оплачиваются только в ноябре 2026.</p></details>
           <p id="goal-auto-status" role="status"></p>
           <div class="analytics-grid" id="goal-auto-totals"></div>
-          <div class="goal-table-wrap"><table class="goal-plan-table"><thead><tr><th>Показатель</th><th>За месяц</th><th>За смену</th><th>Премия за месяц</th></tr></thead><tbody id="goal-auto-rows"></tbody></table></div>
+          <h3>Что осталось до плана</h3>
+          <div class="analytics-grid" id="goal-progress-totals"></div>
+          <p id="goal-progress-note" class="panel__hint"></p>
+          <div class="goal-table-wrap"><table class="goal-plan-table"><thead><tr><th>Показатель</th><th>За месяц</th><th>В среднем за смену</th><th>Факт</th><th>Осталось</th><th>Нужно за оставшуюся смену</th><th>Премия за месяц</th></tr></thead><tbody id="goal-auto-rows"></tbody></table></div>
           <p id="goal-auto-credit" class="panel__hint"></p>
           <p class="panel__hint">План на весь месяц: оклад + административный бонус + торговая премия × сезонность × заданный мультипликатор. Фактические продажи из дневника повторно не прибавляются. Достигнутый предел не увеличивается ради цели: показываем недобор. Кредитный оборот — часть продаж, отдельная премия с него не начисляется. Налоги и удержания не рассчитываются.</p>
         </div>
@@ -549,13 +552,13 @@
 
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
-  <script src="data.js?v=20261115realistic"></script>
-  <script src="utils.js?v=20261115realistic"></script>
-  <script src="storage.js?v=20261115realistic"></script>
-  <script src="employee.js?v=20261115realistic"></script>
-  <script src="calculator.js?v=20261115realistic"></script>
-  <script src="export.js?v=20261115realistic"></script>
-  <script src="script.js?v=20261115realistic"></script>
-  <script src="ui.js?v=20261115realistic"></script>
+  <script src="data.js?v=20261115progress"></script>
+  <script src="utils.js?v=20261115progress"></script>
+  <script src="storage.js?v=20261115progress"></script>
+  <script src="employee.js?v=20261115progress"></script>
+  <script src="calculator.js?v=20261115progress"></script>
+  <script src="export.js?v=20261115progress"></script>
+  <script src="script.js?v=20261115progress"></script>
+  <script src="ui.js?v=20261115progress"></script>
 </body>
 </html>

@@ -195,6 +195,32 @@ class SalaryCalculator {
     };
   }
 
+  static calculatePlanProgress(period, plan, calculation = SalaryCalculator.calculatePeriod(period)) {
+    const config = period.salaryGoal.realistic;
+    const plannedShifts = config.shifts ?? period.workDays;
+    const recordedShifts = Object.values(period.days).filter(day => day.hours > 0 || day.items.some(item => item.indicatorId && item.value > 0)).length;
+    const completedShifts = config.completedShifts ?? recordedShifts;
+    const remainingShifts = Math.max(0, plannedShifts - completedShifts);
+    // Monthly workHours can contain the whole schedule; only diary hours are earned.
+    const earned = Utils.roundMoney(calculation.totalDaySalary + calculation.finalPremium);
+    const salaryRemaining = Math.max(0, Utils.roundMoney(period.salaryGoal.desired - earned));
+    const planSalaryRemaining = Math.max(0, Utils.roundMoney(plan.projected - earned));
+    const perShift = amount => amount === 0 ? 0 : remainingShifts > 0 ? Math.ceil(amount / remainingShifts - 1e-9) : null;
+    const simIndicators = ['base_tp', 'bundle_base_tp', 'high_bundle_tp', 'high_bundle_plus_tp', 'high_bundle_plusplus_tp', 'premium_tp', 'promo_sim_booster'];
+    const lines = plan.lines.map(line => {
+      const definition = REALISTIC_PLAN_PRODUCTS.find(([key]) => key === line.key);
+      let actual = 0;
+      Object.values(period.days).forEach(day => day.items.forEach(item => {
+        const matches = line.key === 'sim' ? item.block === BLOCKS.OPERATOR && simIndicators.includes(item.indicatorId) : item.block === definition[2] && item.indicatorId === definition[3];
+        if (matches) actual += item.value;
+      }));
+      actual = Utils.roundMoney(actual);
+      const remaining = Math.max(0, Utils.roundMoney(line.quantity - actual));
+      return { ...line, actual, remaining, neededPerShift: perShift(remaining) };
+    });
+    return { lines, recordedShifts, completedShifts, remainingShifts, earned, salaryRemaining, planSalaryRemaining, neededEarningsPerShift: perShift(salaryRemaining), neededPlanEarningsPerShift: perShift(planSalaryRemaining) };
+  }
+
   static calculateRealisticPlan(period) {
     const goal = period.salaryGoal;
     const config = Object.fromEntries(REALISTIC_PLAN_FIELDS.map(([key, , fallback]) => [key, goal.realistic?.[key] ?? fallback]));
@@ -212,6 +238,7 @@ class SalaryCalculator {
       if ((key.endsWith('Share') || key.endsWith('Credit')) && value > 100) errors.push('Доли должны быть от 0 до 100%.');
       if (key.endsWith('Count') && !Number.isInteger(value)) errors.push('Количество операций должно быть целым.');
     }
+    if (config.completedShifts !== null && (!Number.isInteger(config.completedShifts) || config.completedShifts > shifts)) errors.push('Отработанные смены должны быть целым числом от нуля до плана смен.');
     const category = DataService.getCityCategoryKey(period.cityId);
     const rates = Object.fromEntries(REALISTIC_PLAN_PRODUCTS.map(([key, , block, id]) => {
       const rate = DataService.getIndicatorRateByCategory(DataService.getIndicator(block, id), category);
